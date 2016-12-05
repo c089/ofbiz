@@ -9,6 +9,7 @@ import org.junit.rules.ExpectedException;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -187,6 +188,24 @@ public class ShoppingCartTest {
 
         assertThat(result2, is(0));
         assertThat(cart.items(), is(Arrays.asList(item)));
+    }
+
+    @Test
+    public void getItemsProducts_should_return_list_of_products() throws Exception {
+        GenericValue product1 = mock(GenericValue.class);
+        ShoppingCartItem item1 = mock(ShoppingCartItem.class);
+        when(item1.getProduct()).thenReturn(product1);
+
+        GenericValue product2 = mock(GenericValue.class);
+        ShoppingCartItem item2 = mock(ShoppingCartItem.class);
+        when(item2.getProduct()).thenReturn(product2);
+
+        ShoppingCartItem item3 = mock(ShoppingCartItem.class);
+        when(item3.getProduct()).thenReturn(null);
+
+        List<ShoppingCartItem> items = Arrays.asList(item1, item2);
+
+        assertThat(ShoppingCart.getItemsProducts(items), is(Arrays.asList(product1, product2)));
     }
 
     private ProductStoreBuilder productStore() {
