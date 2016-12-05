@@ -265,24 +265,17 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
         this.billToCustomerPartyId = billToCustomerPartyId;
         this.billFromVendorPartyId = billFromVendorPartyId;
 
+
         if (productStoreId != null) {
-
+            ProductStore productStore = getProductStore(delegator, productStoreId);
             // set the default view cart on add for this store
-            GenericValue productStore = getProductStore(delegator, productStoreId);
-            if (productStore == null) {
-                throw new IllegalArgumentException("Unable to locate ProductStore by ID [" + productStoreId + "]");
-            }
-
-            String storeViewCartOnAdd = productStore.getString("viewCartOnAdd");
-            if (storeViewCartOnAdd != null && "Y".equalsIgnoreCase(storeViewCartOnAdd)) {
-                this.viewCartOnAdd = true;
-            }
+            this.viewCartOnAdd = productStore.viewCartOnAdd();
 
             if (billFromVendorPartyId == null) {
                 // since default cart is of type SALES_ORDER, set to store's payToPartyId
-                this.billFromVendorPartyId = productStore.getString("payToPartyId");
+                this.billFromVendorPartyId = productStore.payToPartId();
             }
-            this.facilityId = productStore.getString("inventoryFacilityId");
+            this.facilityId = productStore.inventoryFacilityId();
         }
 
     }
@@ -305,9 +298,17 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
         return Locale.getDefault();
     }
 
-
-    protected GenericValue getProductStore(Delegator delegator, String productStoreId) {
+    protected GenericValue loadProductStore(Delegator delegator, String productStoreId) {
         return ProductStoreWorker.getProductStore(productStoreId, delegator);
+    }
+
+    private ProductStore getProductStore(Delegator delegator, String productStoreId) {
+        GenericValue productStoreValue = loadProductStore(delegator, productStoreId);
+        if (productStoreValue == null) {
+            throw new IllegalArgumentException("Unable to locate ProductStore by ID [" + productStoreId + "]");
+        }
+
+        return new ProductStore(productStoreValue);
     }
 
     public Delegator getDelegator() {
@@ -5095,4 +5096,32 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
         }
         return minQuantity;
     }
+
+    class ProductStore {
+        private GenericValue productStore;
+        private boolean viewCartOnAdd;
+        private String payToPartyId;
+        private String inventoryFacilityId;
+
+        ProductStore(GenericValue productStore) {
+            String storeViewCartOnAdd = productStore.getString("viewCartOnAdd");
+            viewCartOnAdd = storeViewCartOnAdd != null && "Y".equalsIgnoreCase(storeViewCartOnAdd);
+
+            payToPartyId = productStore.getString("payToPartyId");
+            inventoryFacilityId = productStore.getString("inventoryFacilityId");
+        }
+
+        public boolean viewCartOnAdd() {
+            return viewCartOnAdd;
+        }
+
+        public String payToPartId() {
+            return payToPartyId;
+        }
+
+        public String inventoryFacilityId() {
+            return inventoryFacilityId;
+        }
+    }
+
 }

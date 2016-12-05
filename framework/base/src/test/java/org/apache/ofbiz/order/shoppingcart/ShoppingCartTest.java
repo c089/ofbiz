@@ -238,7 +238,7 @@ public class ShoppingCartTest {
                 }
 
                 @Override
-                protected GenericValue getProductStore(Delegator delegator, String productStoreId) {
+                protected GenericValue loadProductStore(Delegator delegator, String productStoreId) {
                     return productStore;
                 }
 
