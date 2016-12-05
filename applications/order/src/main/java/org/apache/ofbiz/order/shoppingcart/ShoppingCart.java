@@ -294,6 +294,44 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
 
 
     /* -------------------- c089: Seams start -------------------- */
+
+    class ProductStore {
+        private GenericValue productStore;
+        private boolean viewCartOnAdd;
+        private String payToPartyId;
+        private String inventoryFacilityId;
+
+        ProductStore(GenericValue productStore) {
+            String storeViewCartOnAdd = productStore.getString("viewCartOnAdd");
+            viewCartOnAdd = storeViewCartOnAdd != null && "Y".equalsIgnoreCase(storeViewCartOnAdd);
+
+            payToPartyId = productStore.getString("payToPartyId");
+            inventoryFacilityId = productStore.getString("inventoryFacilityId");
+        }
+
+        public boolean viewCartOnAdd() {
+            return viewCartOnAdd;
+        }
+
+        public String payToPartId() {
+            return payToPartyId;
+        }
+
+        public String inventoryFacilityId() {
+            return inventoryFacilityId;
+        }
+    }
+    class GiftCertSettings {
+        final private boolean isPinRequired;
+
+        GiftCertSettings(GenericValue value) {
+            this.isPinRequired = "Y".equals(value.getString("requirePinCode"));
+        }
+
+        boolean isPinRequired() {
+            return this.isPinRequired;
+        }
+    }
     interface ProductStoreRepository {
         GenericValue giftCertSettings(String productStoreId) throws GenericEntityException;
     }
@@ -1971,7 +2009,7 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
         try {
             GenericValue giftCertSettings = getGiftCertSettingFromStore(delegator);
             if (giftCertSettings != null) {
-                return "Y".equals(giftCertSettings.getString("requirePinCode"));
+                return new GiftCertSettings(giftCertSettings).isPinRequired();
             } else {
                 getLogger().logWarning("No product store gift certificate settings found for store [" + getProductStoreId() + "]", module);
                 return true;
@@ -5139,31 +5177,5 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
         return minQuantity;
     }
 
-    class ProductStore {
-        private GenericValue productStore;
-        private boolean viewCartOnAdd;
-        private String payToPartyId;
-        private String inventoryFacilityId;
-
-        ProductStore(GenericValue productStore) {
-            String storeViewCartOnAdd = productStore.getString("viewCartOnAdd");
-            viewCartOnAdd = storeViewCartOnAdd != null && "Y".equalsIgnoreCase(storeViewCartOnAdd);
-
-            payToPartyId = productStore.getString("payToPartyId");
-            inventoryFacilityId = productStore.getString("inventoryFacilityId");
-        }
-
-        public boolean viewCartOnAdd() {
-            return viewCartOnAdd;
-        }
-
-        public String payToPartId() {
-            return payToPartyId;
-        }
-
-        public String inventoryFacilityId() {
-            return inventoryFacilityId;
-        }
-    }
 
 }
