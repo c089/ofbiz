@@ -35,7 +35,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.TreeMap;
 
 import org.apache.ofbiz.base.util.Debug;
@@ -796,14 +798,11 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
     }
 
     public static List<GenericValue> getItemsProducts(List<ShoppingCartItem> cartItems) {
-        List<GenericValue> productList = new LinkedList<GenericValue>();
-        for (ShoppingCartItem item : cartItems) {
-            GenericValue product = item.getProduct();
-            if (product != null) {
-                productList.add(product);
-            }
-        }
-        return productList;
+        return cartItems
+                .stream()
+                .map(ShoppingCartItem::getProduct)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     public void ensureItemsQuantity(List<ShoppingCartItem> cartItems, LocalDispatcher dispatcher, BigDecimal quantity) throws CartItemModifyException {
