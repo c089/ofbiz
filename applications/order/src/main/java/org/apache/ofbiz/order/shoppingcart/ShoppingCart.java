@@ -292,6 +292,47 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
         this(delegator, productStoreId, null, locale, currencyUom);
     }
 
+
+    /* -------------------- c089: Seams start -------------------- */
+    interface ProductStoreRepository {
+        GenericValue giftCertSettings(String productStoreId) throws GenericEntityException;
+    }
+
+    interface Logger {
+        void logError(String msg, String module);
+
+        void logWarning(String msg, String module);
+    }
+
+    class EntityQueryProductStoreRepository implements ProductStoreRepository {
+        private final Delegator delegator;
+
+        EntityQueryProductStoreRepository(Delegator delegator) {
+            this.delegator = delegator;
+        }
+
+        @Override
+        public GenericValue giftCertSettings(String productStoreId) throws GenericEntityException {
+            return EntityQuery.use(delegator).from("ProductStoreFinActSetting").where("productStoreId", productStoreId, "finAccountTypeId", FinAccountHelper.giftCertFinAccountTypeId).cache().queryOne();
+        }
+    }
+
+    class StaticLogger implements Logger {
+        @Override
+        public void logError(String msg, String module) {
+            Debug.logError(msg, module);
+        }
+
+        @Override
+        public void logWarning(String msg, String module) {
+            Debug.logWarning(msg, module);
+        }
+    }
+    private Logger logger = new StaticLogger();
+    protected Logger getLogger() {
+        return logger;
+    }
+
     protected String getDefaultCurrency(Delegator delegator) {
         return EntityUtilProperties.getPropertyValue("general", "currency.uom.id.default", "USD", delegator);
     }
@@ -303,6 +344,12 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
     protected GenericValue loadProductStore(Delegator delegator, String productStoreId) {
         return ProductStoreWorker.getProductStore(productStoreId, delegator);
     }
+
+    protected ProductStoreRepository getProductStoreRepository() {
+        return new EntityQueryProductStoreRepository(this.delegator);
+    }
+    /* -------------------- c089: Seams end -------------------- */
+
 
     private ProductStore getProductStore(Delegator delegator, String productStoreId) {
         GenericValue productStoreValue = loadProductStore(delegator, productStoreId);
@@ -1912,7 +1959,7 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
      * @throws GenericEntityException
      */
     public GenericValue getGiftCertSettingFromStore(Delegator delegator) throws GenericEntityException {
-        return EntityQuery.use(delegator).from("ProductStoreFinActSetting").where("productStoreId", getProductStoreId(), "finAccountTypeId", FinAccountHelper.giftCertFinAccountTypeId).cache().queryOne();
+        return this.getProductStoreRepository().giftCertSettings(this.getProductStoreId());
     }
 
     /**
@@ -1930,11 +1977,11 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
                     return false;
                 }
             } else {
-                Debug.logWarning("No product store gift certificate settings found for store [" + getProductStoreId() + "]", module);
+                getLogger().logWarning("No product store gift certificate settings found for store [" + getProductStoreId() + "]", module);
                 return true;
             }
         } catch (GenericEntityException ex) {
-            Debug.logError("Error checking if store requires pin number for GC: " + ex.getMessage(), module);
+            getLogger().logError("Error checking if store requires pin number for GC: " + ex.getMessage(), module);
             return true;
         }
     }

@@ -1,6 +1,7 @@
 package org.apache.ofbiz.order.shoppingcart;
 
 import org.apache.ofbiz.entity.Delegator;
+import org.apache.ofbiz.entity.GenericEntityException;
 import org.apache.ofbiz.entity.GenericValue;
 import org.apache.ofbiz.service.LocalDispatcher;
 import org.junit.Rule;
@@ -17,6 +18,7 @@ import static org.hamcrest.Matchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 public class ShoppingCartTest {
     @Rule
@@ -208,6 +210,96 @@ public class ShoppingCartTest {
         assertThat(ShoppingCart.getItemsProducts(items), is(Arrays.asList(product1, product2)));
     }
 
+    ShoppingCart.ProductStoreRepository productStoreRepository = new ShoppingCart.ProductStoreRepository() {
+        @Override
+        public GenericValue giftCertSettings(String s) throws GenericEntityException {
+            throw new GenericEntityException("my message");
+        }
+    };
+
+    @Test
+    public void isPinRequiredForGC_should_be_true_when_gift_cert_settings_cannot_be_loaded() throws Exception {
+        ShoppingCart cart = cart()
+                .withProductStoreRepository(productStoreRepository)
+                .build();
+
+        boolean pinRequiredForGC = cart.isPinRequiredForGC(mock(Delegator.class));
+        assertThat(pinRequiredForGC, is(true));
+    }
+
+    @Test
+    public void isPinRequiredForGC_should_log_error_when_gift_cert_settings_cannot_be_loaded() throws Exception {
+        ShoppingCart.Logger logger = mock(ShoppingCart.Logger.class);
+
+        ShoppingCart cart = cart()
+                .withLogger(logger)
+                .withProductStoreRepository(productStoreRepository)
+                .build();
+
+
+        cart.isPinRequiredForGC(mock(Delegator.class));
+
+        verify(logger).logError("Error checking if store requires pin number for GC: my message", ShoppingCart.module);
+    }
+
+    @Test
+    public void isPinRequiredForGC_should_be_true_when_GiftCertSettings_requirePinCode_is_set_to_Y() throws Exception {
+        ShoppingCart.ProductStoreRepository repository = new ShoppingCart.ProductStoreRepository() {
+            @Override
+            public GenericValue giftCertSettings(String productStoreId) throws GenericEntityException {
+                GenericValue value = mock(GenericValue.class);
+                when(value.getString("requirePinCode")).thenReturn("Y");
+                return value;
+            }
+        };
+
+        ShoppingCart cart = cart()
+                .withProductStoreRepository(repository)
+                .build();
+
+        assertThat(cart.isPinRequiredForGC(mock(Delegator.class)), is(true));
+    }
+
+
+    @Test
+    public void isPinRequiredForGC_should_be_false_when_GiftCertSettings_requirePinCode_is_set_to_N() throws Exception {
+        ShoppingCart.ProductStoreRepository repository = new ShoppingCart.ProductStoreRepository() {
+            @Override
+            public GenericValue giftCertSettings(String productStoreId) throws GenericEntityException {
+                GenericValue value = mock(GenericValue.class);
+                when(value.getString("requirePinCode")).thenReturn("N");
+                return value;
+            }
+        };
+
+        ShoppingCart cart = cart()
+                .withProductStoreRepository(repository)
+                .build();
+
+        assertThat(cart.isPinRequiredForGC(mock(Delegator.class)), is(false));
+    }
+
+    @Test
+    public void isPinRequiredForGC_should_warn_about_missing_giftCertSettings() throws Exception {
+        ShoppingCart.Logger logger = mock(ShoppingCart.Logger.class);
+        ShoppingCart.ProductStoreRepository repository = new ShoppingCart.ProductStoreRepository() {
+            @Override
+            public GenericValue giftCertSettings(String productStoreId) throws GenericEntityException {
+                return null;
+            }
+        };
+
+        ShoppingCart cart = cart()
+                .withLogger(logger)
+                .withProductStoreRepository(repository)
+                .build();
+
+        boolean pinRequiredForGC = cart.isPinRequiredForGC(cart.getDelegator());
+
+        verify(logger).logWarning("No product store gift certificate settings found for store [my_store]", ShoppingCart.module);
+        assertThat(pinRequiredForGC, is(true));
+    }
+
     private ProductStoreBuilder productStore() {
         return new ProductStoreBuilder();
     }
@@ -250,6 +342,8 @@ public class ShoppingCartTest {
         private String defaultCurrency = "USD";
         private String billFromVendorPartyId = null;
         private boolean readOnly = false;
+        private ShoppingCart.Logger logger = mock(ShoppingCart.Logger.class);
+        private ShoppingCart.ProductStoreRepository productStoreRepository;
 
         ShoppingCartBuilder withProductStore(GenericValue store) {
             this.productStore = store;
@@ -291,6 +385,16 @@ public class ShoppingCartTest {
             return this;
         }
 
+        public ShoppingCartBuilder withLogger(ShoppingCart.Logger logger) {
+            this.logger = logger;
+            return this;
+        }
+
+        public ShoppingCartBuilder withProductStoreRepository(ShoppingCart.ProductStoreRepository repository) {
+            this.productStoreRepository = repository;
+            return this;
+        }
+
         ShoppingCart build() {
             ShoppingCart cart = new ShoppingCart(this.delegator, this.productStoreId, "websiteid", this.locale, this.currency, null, this.billFromVendorPartyId) {
                 @Override
@@ -306,6 +410,16 @@ public class ShoppingCartTest {
                 @Override
                 protected String getDefaultCurrency(Delegator delegator) {
                     return defaultCurrency;
+                }
+
+                @Override
+                protected Logger getLogger() {
+                    return logger;
+                }
+
+                @Override
+                protected ProductStoreRepository getProductStoreRepository() {
+                    return productStoreRepository;
                 }
             };
             cart.setReadOnlyCart(this.readOnly);
