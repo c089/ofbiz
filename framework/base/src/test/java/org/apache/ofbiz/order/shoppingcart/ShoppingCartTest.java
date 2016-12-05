@@ -8,6 +8,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.Map;
 
@@ -153,6 +154,41 @@ public class ShoppingCartTest {
         assertThat(cart.getFacilityId(), is("my facility"));
     }
 
+    @Test
+    public void should_refuse_to_add_item_to_readonly_cart() throws CartItemModifyException {
+        thrown.expect(CartItemModifyException.class);
+        thrown.expectMessage("Cart items cannot be changed");
+
+        ShoppingCart cart = cart()
+                .readOnly()
+                .build();
+
+        cart.addItem(0, new ShoppingCartItem());
+    }
+
+    @Test
+    public void should_add_first_cart_item() throws Exception {
+        ShoppingCart cart = cart()
+                .build();
+
+        int result = cart.addItem(0, new ShoppingCartItem());
+
+        assertThat(result, is(0));
+    }
+
+    @Test
+    public void should_not_add_the_same_item_twice() throws Exception {
+        ShoppingCartItem item = new ShoppingCartItem();
+        ShoppingCart cart = cart()
+                .build();
+        cart.addItem(0, item);
+
+        int result2 = cart.addItem(1, item);
+
+        assertThat(result2, is(0));
+        assertThat(cart.items(), is(Arrays.asList(item)));
+    }
+
     private ProductStoreBuilder productStore() {
         return new ProductStoreBuilder();
     }
@@ -194,6 +230,7 @@ public class ShoppingCartTest {
         private String currency = "EUR";
         private String defaultCurrency = "USD";
         private String billFromVendorPartyId = null;
+        private boolean readOnly = false;
 
         ShoppingCartBuilder withProductStore(GenericValue store) {
             this.productStore = store;
@@ -230,8 +267,13 @@ public class ShoppingCartTest {
             return this;
         }
 
+        public ShoppingCartBuilder readOnly() {
+            this.readOnly = true;
+            return this;
+        }
+
         ShoppingCart build() {
-            return new ShoppingCart(this.delegator, this.productStoreId, "websiteid", this.locale, this.currency, null, this.billFromVendorPartyId) {
+            ShoppingCart cart = new ShoppingCart(this.delegator, this.productStoreId, "websiteid", this.locale, this.currency, null, this.billFromVendorPartyId) {
                 @Override
                 protected Locale getDefaultLocale() {
                     return defaultLocale;
@@ -247,6 +289,8 @@ public class ShoppingCartTest {
                     return defaultCurrency;
                 }
             };
+            cart.setReadOnlyCart(this.readOnly);
+            return cart;
         }
     }
 
