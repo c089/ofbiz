@@ -260,15 +260,15 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
         this.delegatorName = delegator.getDelegatorName();
         this.productStoreId = productStoreId;
         this.webSiteId = webSiteId;
-        this.locale = (locale != null) ? locale : Locale.getDefault();
-        this.currencyUom = (currencyUom != null) ? currencyUom : EntityUtilProperties.getPropertyValue("general", "currency.uom.id.default", "USD", delegator);
+        this.locale = (locale != null) ? locale : getDefaultLocale();
+        this.currencyUom = (currencyUom != null) ? currencyUom : getDefaultCurrency(delegator);
         this.billToCustomerPartyId = billToCustomerPartyId;
         this.billFromVendorPartyId = billFromVendorPartyId;
 
         if (productStoreId != null) {
 
             // set the default view cart on add for this store
-            GenericValue productStore = ProductStoreWorker.getProductStore(productStoreId, delegator);
+            GenericValue productStore = getProductStore(delegator, productStoreId);
             if (productStore == null) {
                 throw new IllegalArgumentException("Unable to locate ProductStore by ID [" + productStoreId + "]");
             }
@@ -287,7 +287,6 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
 
     }
 
-
     /** Creates new empty ShoppingCart object. */
     public ShoppingCart(Delegator delegator, String productStoreId, String webSiteId, Locale locale, String currencyUom) {
         this(delegator, productStoreId, webSiteId, locale, currencyUom, null, null);
@@ -296,6 +295,19 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
     /** Creates a new empty ShoppingCart object. */
     public ShoppingCart(Delegator delegator, String productStoreId, Locale locale, String currencyUom) {
         this(delegator, productStoreId, null, locale, currencyUom);
+    }
+
+    protected String getDefaultCurrency(Delegator delegator) {
+        return EntityUtilProperties.getPropertyValue("general", "currency.uom.id.default", "USD", delegator);
+    }
+
+    protected Locale getDefaultLocale() {
+        return Locale.getDefault();
+    }
+
+
+    protected GenericValue getProductStore(Delegator delegator, String productStoreId) {
+        return ProductStoreWorker.getProductStore(productStoreId, delegator);
     }
 
     public Delegator getDelegator() {
