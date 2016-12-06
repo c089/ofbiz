@@ -7,7 +7,6 @@ import org.apache.ofbiz.service.LocalDispatcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.ExternalResource;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -19,20 +18,6 @@ import static org.mockito.Mockito.*;
 public class ShoppingCartTest {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
-
-    private ShoppingCart.MinimumOrderPriceListRepository originalMinimumOrderPriceListRepository;
-    @Rule
-    public ExternalResource resetStaticValues = new ExternalResource() {
-        @Override
-        protected void before() throws Throwable {
-            originalMinimumOrderPriceListRepository = ShoppingCart.minimumOrderPriceListRepository;
-        };
-
-        @Override
-        protected void after() {
-            ShoppingCart.minimumOrderPriceListRepository = originalMinimumOrderPriceListRepository;
-        };
-    };
 
     @Test
     public void initializesEmptyCart() throws Exception {
@@ -310,51 +295,48 @@ public class ShoppingCartTest {
         assertThat(pinRequiredForGC, is(true));
     }
 
-    class TestMinimumOrderPriceListRepository implements ShoppingCart.MinimumOrderPriceListRepository {
-        private final BigDecimal minimumOrderPriceForAllProducts;
-        private List<GenericValue> productPrices;
-
-        TestMinimumOrderPriceListRepository(BigDecimal minimumOrderPriceForAllProducts, List<GenericValue> productPrices) {
-            this.minimumOrderPriceForAllProducts = minimumOrderPriceForAllProducts;
-            this.productPrices = productPrices;
-        }
-
-        @Override
-        public BigDecimal getMinimumOrderPriceFor(String itemProductId) throws GenericEntityException {
-            return minimumOrderPriceForAllProducts;
-        }
-
-        @Override
-        public List<GenericValue> getPricesForProduct(String itemProductId) throws GenericEntityException {
-            return productPrices;
-        }
-    }
-
     @Test
     public void getMinimumOrderQuantity_should_return_zero_without_itemBasePrice_and_minimumOrderPrice_() throws Exception {
-        ShoppingCart.minimumOrderPriceListRepository = new TestMinimumOrderPriceListRepository(null, Arrays.asList());
+        ShoppingCart cart = cart()
+                .withMinimumOrderPriceListRepository(minimumOrderPriceRepository()
+                        .withMinimumOrderPriceForAnyProduct(null)
+                        .build())
+                .build();
 
-        BigDecimal result = ShoppingCart.getMinimumOrderQuantity(null, null, null);
+        BigDecimal result = cart.getMinimumOrderQuantity(null, null);
 
         assertThat(result, is(BigDecimal.valueOf(0)));
     }
 
     @Test
     public void getMinimumOrderQuantity_should_return_zero_when_MinimumOrderPrice_for_product_is_zero() throws Exception {
-        ShoppingCart.minimumOrderPriceListRepository = new TestMinimumOrderPriceListRepository(BigDecimal.valueOf(0), Arrays.asList());
+        ShoppingCart cart = cart()
+                .withMinimumOrderPriceListRepository(
+                        minimumOrderPriceRepository()
+                                .withMinimumOrderPriceForAnyProduct(BigDecimal.valueOf(0))
+                                .build())
+                .build();
 
-        BigDecimal result = ShoppingCart.getMinimumOrderQuantity(null, null, null);
+        BigDecimal result = cart.getMinimumOrderQuantity(null, null);
 
         assertThat(result, is(BigDecimal.valueOf(0)));
+    }
+
+    private MinimumOrderPriceRepositoryBuilder minimumOrderPriceRepository() {
+        return new MinimumOrderPriceRepositoryBuilder();
     }
 
     @Test
     public void getMinimumOrderQuantity_should_return_MinimumOrderPrice_divided_by_given_itemBasePrice() throws Exception {
         BigDecimal minimumOrderPrice = BigDecimal.valueOf(20);
         BigDecimal itemBasePrice = BigDecimal.valueOf(10);
-        ShoppingCart.minimumOrderPriceListRepository = new TestMinimumOrderPriceListRepository(minimumOrderPrice, Arrays.asList());
+        ShoppingCart cart = cart()
+                .withMinimumOrderPriceListRepository(minimumOrderPriceRepository()
+                        .withMinimumOrderPriceForAnyProduct(minimumOrderPrice)
+                        .build())
+                .build();
 
-        BigDecimal result = ShoppingCart.getMinimumOrderQuantity(null, itemBasePrice, "foo");
+        BigDecimal result = cart.getMinimumOrderQuantity(itemBasePrice, "foo");
         assertThat(result, is(BigDecimal.valueOf(2)));
     }
 
@@ -363,9 +345,13 @@ public class ShoppingCartTest {
     public void getMinimumOrderQuantity_should_round_quantity_up() throws Exception {
         BigDecimal minimumOrderPrice = BigDecimal.valueOf(20);
         BigDecimal itemBasePrice = BigDecimal.valueOf(15);
-        ShoppingCart.minimumOrderPriceListRepository = new TestMinimumOrderPriceListRepository(minimumOrderPrice, Arrays.asList());
+        ShoppingCart cart = cart()
+                .withMinimumOrderPriceListRepository(minimumOrderPriceRepository()
+                        .withMinimumOrderPriceForAnyProduct(minimumOrderPrice)
+                        .build())
+                .build();
 
-        BigDecimal result = ShoppingCart.getMinimumOrderQuantity(null, itemBasePrice, "foo");
+        BigDecimal result = cart.getMinimumOrderQuantity(itemBasePrice, "foo");
         assertThat(result, is(BigDecimal.valueOf(2)));
     }
 
@@ -376,12 +362,15 @@ public class ShoppingCartTest {
         final BigDecimal specialPromoPrice = BigDecimal.valueOf(5);
         final BigDecimal expectedOrderQuantity = BigDecimal.valueOf(4);
 
-        ShoppingCart.minimumOrderPriceListRepository = new MinimumOrderPriceRepositoryBuilder()
-            .withMinimumOrderPriceForAnyProduct(minimumOrderPrice)
-            .withSpecialPromoPriceForAnyProduct(specialPromoPrice)
-            .build();
+        ShoppingCart.MinimumOrderPriceListRepository orderPriceListRepository = minimumOrderPriceRepository()
+                .withMinimumOrderPriceForAnyProduct(minimumOrderPrice)
+                .withSpecialPromoPriceForAnyProduct(specialPromoPrice)
+                .build();
+        ShoppingCart cart = cart()
+                .withMinimumOrderPriceListRepository(orderPriceListRepository)
+                .build();
 
-        BigDecimal result = ShoppingCart.getMinimumOrderQuantity(mock(Delegator.class), itemBasePrice, "foo");
+        BigDecimal result = cart.getMinimumOrderQuantity(itemBasePrice, "foo");
         assertThat(result, is(expectedOrderQuantity));
     }
 
@@ -395,7 +384,22 @@ public class ShoppingCartTest {
         }
 
         ShoppingCart.MinimumOrderPriceListRepository build() {
-            return new TestMinimumOrderPriceListRepository(this.minimumOrderPrice, this.productPrices);
+            BigDecimal minimumOrderPriceForAllProducts1 = this.minimumOrderPrice;
+            List<GenericValue> productPrices1 = this.productPrices;
+            return new ShoppingCart.MinimumOrderPriceListRepository() {
+                private final BigDecimal minimumOrderPriceForAllProducts = minimumOrderPriceForAllProducts1;
+                private List<GenericValue> productPrices = productPrices1;
+
+                @Override
+                public BigDecimal getMinimumOrderPriceFor(String itemProductId) throws GenericEntityException {
+                    return minimumOrderPriceForAllProducts;
+                }
+
+                @Override
+                public List<GenericValue> getPricesForProduct(String itemProductId) throws GenericEntityException {
+                    return productPrices;
+                }
+            };
         }
 
         public MinimumOrderPriceRepositoryBuilder withSpecialPromoPriceForAnyProduct(BigDecimal specialPromoPrice) {
@@ -452,6 +456,7 @@ public class ShoppingCartTest {
         private boolean readOnly = false;
         private ShoppingCart.Logger logger = mock(ShoppingCart.Logger.class);
         private ShoppingCart.ProductStoreRepository productStoreRepository;
+        private ShoppingCart.MinimumOrderPriceListRepository minimumOrderPriceRepository;
 
         ShoppingCartBuilder withProductStore(GenericValue store) {
             this.productStore = store;
@@ -529,9 +534,19 @@ public class ShoppingCartTest {
                 protected ProductStoreRepository getProductStoreRepository() {
                     return productStoreRepository;
                 }
+
+                @Override
+                protected MinimumOrderPriceListRepository getMinimumOrderPriceListRepository() {
+                    return minimumOrderPriceRepository;
+                }
             };
             cart.setReadOnlyCart(this.readOnly);
             return cart;
+        }
+
+        public ShoppingCartBuilder withMinimumOrderPriceListRepository(ShoppingCart.MinimumOrderPriceListRepository testMinimumOrderPriceListRepository) {
+            this.minimumOrderPriceRepository = testMinimumOrderPriceListRepository;
+            return this;
         }
     }
 

@@ -280,7 +280,7 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
             this.facilityId = productStore.inventoryFacilityId();
         }
 
-        minimumOrderPriceListRepository = new DelegatingMinimumOrderPriceListRepository(delegator);
+        this.minimumOrderPriceListRepository = new DelegatingMinimumOrderPriceListRepository(delegator);
     }
 
     /** Creates new empty ShoppingCart object. */
@@ -388,7 +388,11 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
         return new EntityQueryProductStoreRepository(this.delegator);
     }
 
-    protected static MinimumOrderPriceListRepository minimumOrderPriceListRepository;
+    private MinimumOrderPriceListRepository minimumOrderPriceListRepository;
+    protected MinimumOrderPriceListRepository getMinimumOrderPriceListRepository() {
+        return minimumOrderPriceListRepository;
+    }
+
     /* -------------------- c089: Seams end -------------------- */
 
 
@@ -5145,13 +5149,17 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
     }
 
     public static BigDecimal getMinimumOrderQuantity(Delegator delegator, BigDecimal itemBasePrice, String itemProductId) throws GenericEntityException {
+        return new ShoppingCart().getMinimumOrderQuantity(itemBasePrice, itemProductId);
+    }
+
+    protected BigDecimal getMinimumOrderQuantity(BigDecimal itemBasePrice, String itemProductId) throws GenericEntityException {
         BigDecimal minQuantity = BigDecimal.ZERO;
         BigDecimal minimumOrderPrice = BigDecimal.ZERO;
 
-        minimumOrderPrice = minimumOrderPriceListRepository.getMinimumOrderPriceFor(itemProductId);
+        minimumOrderPrice = getMinimumOrderPriceListRepository().getMinimumOrderPriceFor(itemProductId);
 
         if (itemBasePrice == null) {
-            List<GenericValue> productPriceList = minimumOrderPriceListRepository.getPricesForProduct(itemProductId);
+            List<GenericValue> productPriceList = getMinimumOrderPriceListRepository().getPricesForProduct(itemProductId);
             Map<String, BigDecimal> productPriceMap = new HashMap<String, BigDecimal>();
             for (GenericValue productPrice : productPriceList) {
                 productPriceMap.put(productPrice.getString("productPriceTypeId"), productPrice.getBigDecimal("price"));
@@ -5178,10 +5186,10 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
 
         BigDecimal getMinimumOrderPriceFor(String itemProductId) throws GenericEntityException;
     }
-    static class DelegatingMinimumOrderPriceListRepository implements MinimumOrderPriceListRepository {
+    private static class DelegatingMinimumOrderPriceListRepository implements MinimumOrderPriceListRepository {
         private Delegator delegator;
 
-        public DelegatingMinimumOrderPriceListRepository(Delegator delegator) {
+        DelegatingMinimumOrderPriceListRepository(Delegator delegator) {
             this.delegator = delegator;
         }
 
