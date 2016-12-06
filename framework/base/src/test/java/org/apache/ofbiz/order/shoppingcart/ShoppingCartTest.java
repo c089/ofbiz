@@ -7,22 +7,32 @@ import org.apache.ofbiz.service.LocalDispatcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.ExternalResource;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
-import static org.hamcrest.Matchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.verify;
+import static org.hamcrest.core.Is.is;
+import static org.mockito.Mockito.*;
 
 public class ShoppingCartTest {
     @Rule
     public ExpectedException thrown = ExpectedException.none();
+
+    private ShoppingCart.MinimumOrderPriceListRepository originalMinimumOrderPriceListRepository;
+    @Rule
+    public ExternalResource resetStaticValues = new ExternalResource() {
+        @Override
+        protected void before() throws Throwable {
+            originalMinimumOrderPriceListRepository = ShoppingCart.minimumOrderPriceListRepository;
+        };
+
+        @Override
+        protected void after() {
+            ShoppingCart.minimumOrderPriceListRepository = originalMinimumOrderPriceListRepository;
+        };
+    };
 
     @Test
     public void initializesEmptyCart() throws Exception {
@@ -299,6 +309,104 @@ public class ShoppingCartTest {
         verify(logger).logWarning("No product store gift certificate settings found for store [my_store]", ShoppingCart.module);
         assertThat(pinRequiredForGC, is(true));
     }
+
+    class TestMinimumOrderPriceListRepository implements ShoppingCart.MinimumOrderPriceListRepository {
+        private final BigDecimal minimumOrderPriceForAllProducts;
+        private List<GenericValue> productPrices;
+
+        TestMinimumOrderPriceListRepository(BigDecimal minimumOrderPriceForAllProducts, List<GenericValue> productPrices) {
+            this.minimumOrderPriceForAllProducts = minimumOrderPriceForAllProducts;
+            this.productPrices = productPrices;
+        }
+
+        @Override
+        public BigDecimal getMinimumOrderPriceFor(String itemProductId) throws GenericEntityException {
+            return minimumOrderPriceForAllProducts;
+        }
+
+        @Override
+        public List<GenericValue> getPricesForProduct(String itemProductId) throws GenericEntityException {
+            return productPrices;
+        }
+    }
+
+    @Test
+    public void getMinimumOrderQuantity_should_return_zero_without_itemBasePrice_and_minimumOrderPrice_() throws Exception {
+        ShoppingCart.minimumOrderPriceListRepository = new TestMinimumOrderPriceListRepository(null, Arrays.asList());
+
+        BigDecimal result = ShoppingCart.getMinimumOrderQuantity(null, null, null);
+
+        assertThat(result, is(BigDecimal.valueOf(0)));
+    }
+
+    @Test
+    public void getMinimumOrderQuantity_should_return_zero_when_MinimumOrderPrice_for_product_is_zero() throws Exception {
+        ShoppingCart.minimumOrderPriceListRepository = new TestMinimumOrderPriceListRepository(BigDecimal.valueOf(0), Arrays.asList());
+
+        BigDecimal result = ShoppingCart.getMinimumOrderQuantity(null, null, null);
+
+        assertThat(result, is(BigDecimal.valueOf(0)));
+    }
+
+    @Test
+    public void getMinimumOrderQuantity_should_return_MinimumOrderPrice_divided_by_given_itemBasePrice() throws Exception {
+        BigDecimal minimumOrderPrice = BigDecimal.valueOf(20);
+        BigDecimal itemBasePrice = BigDecimal.valueOf(10);
+        ShoppingCart.minimumOrderPriceListRepository = new TestMinimumOrderPriceListRepository(minimumOrderPrice, Arrays.asList());
+
+        BigDecimal result = ShoppingCart.getMinimumOrderQuantity(null, itemBasePrice, "foo");
+        assertThat(result, is(BigDecimal.valueOf(2)));
+    }
+
+
+    @Test
+    public void getMinimumOrderQuantity_should_round_quantity_up() throws Exception {
+        BigDecimal minimumOrderPrice = BigDecimal.valueOf(20);
+        BigDecimal itemBasePrice = BigDecimal.valueOf(15);
+        ShoppingCart.minimumOrderPriceListRepository = new TestMinimumOrderPriceListRepository(minimumOrderPrice, Arrays.asList());
+
+        BigDecimal result = ShoppingCart.getMinimumOrderQuantity(null, itemBasePrice, "foo");
+        assertThat(result, is(BigDecimal.valueOf(2)));
+    }
+
+    @Test
+    public void getMinimumOrderQuantity_uses_SPECIAL_PROMO_PRICE_if_no_itemBasePrice_given() throws Exception {
+        final BigDecimal minimumOrderPrice = BigDecimal.valueOf(20);
+        final BigDecimal itemBasePrice = null;
+        final BigDecimal specialPromoPrice = BigDecimal.valueOf(5);
+        final BigDecimal expectedOrderQuantity = BigDecimal.valueOf(4);
+
+        ShoppingCart.minimumOrderPriceListRepository = new MinimumOrderPriceRepositoryBuilder()
+            .withMinimumOrderPriceForAnyProduct(minimumOrderPrice)
+            .withSpecialPromoPriceForAnyProduct(specialPromoPrice)
+            .build();
+
+        BigDecimal result = ShoppingCart.getMinimumOrderQuantity(mock(Delegator.class), itemBasePrice, "foo");
+        assertThat(result, is(expectedOrderQuantity));
+    }
+
+    class MinimumOrderPriceRepositoryBuilder {
+        private BigDecimal minimumOrderPrice = BigDecimal.ZERO;
+        private List<GenericValue> productPrices = Collections.emptyList();
+
+        MinimumOrderPriceRepositoryBuilder withMinimumOrderPriceForAnyProduct(BigDecimal price) {
+            this.minimumOrderPrice = price;
+            return this;
+        }
+
+        ShoppingCart.MinimumOrderPriceListRepository build() {
+            return new TestMinimumOrderPriceListRepository(this.minimumOrderPrice, this.productPrices);
+        }
+
+        public MinimumOrderPriceRepositoryBuilder withSpecialPromoPriceForAnyProduct(BigDecimal specialPromoPrice) {
+            GenericValue specialPromoPriceValue = mock(GenericValue.class);
+            when(specialPromoPriceValue.getString("productPriceTypeId")).thenReturn("SPECIAL_PROMO_PRICE");
+            when(specialPromoPriceValue.getBigDecimal("price")).thenReturn(specialPromoPrice);
+            this.productPrices = Arrays.asList(specialPromoPriceValue);
+            return this;
+        }
+    }
+
 
     private ProductStoreBuilder productStore() {
         return new ProductStoreBuilder();

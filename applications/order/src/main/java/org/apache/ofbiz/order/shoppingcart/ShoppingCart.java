@@ -280,6 +280,7 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
             this.facilityId = productStore.inventoryFacilityId();
         }
 
+        minimumOrderPriceListRepository = new DelegatingMinimumOrderPriceListRepository(delegator);
     }
 
     /** Creates new empty ShoppingCart object. */
@@ -386,6 +387,8 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
     protected ProductStoreRepository getProductStoreRepository() {
         return new EntityQueryProductStoreRepository(this.delegator);
     }
+
+    protected static MinimumOrderPriceListRepository minimumOrderPriceListRepository;
     /* -------------------- c089: Seams end -------------------- */
 
 
@@ -5143,17 +5146,12 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
 
     public static BigDecimal getMinimumOrderQuantity(Delegator delegator, BigDecimal itemBasePrice, String itemProductId) throws GenericEntityException {
         BigDecimal minQuantity = BigDecimal.ZERO;
-        BigDecimal minimumOrderPrice = BigDecimal.ZERO; 
+        BigDecimal minimumOrderPrice = BigDecimal.ZERO;
 
-        List<GenericValue> minimumOrderPriceList =  EntityQuery.use(delegator).from("ProductPrice")
-                                                        .where("productId", itemProductId, "productPriceTypeId", "MINIMUM_ORDER_PRICE")
-                                                        .filterByDate()
-                                                        .queryList();
+        minimumOrderPrice = minimumOrderPriceListRepository.getMinimumOrderPriceFor(itemProductId);
+
         if (itemBasePrice == null) {
-            List<GenericValue> productPriceList = EntityQuery.use(delegator).from("ProductPrice")
-                                                      .where("productId", itemProductId)
-                                                      .filterByDate()
-                                                      .queryList();
+            List<GenericValue> productPriceList = minimumOrderPriceListRepository.getPricesForProduct(itemProductId);
             Map<String, BigDecimal> productPriceMap = new HashMap<String, BigDecimal>();
             for (GenericValue productPrice : productPriceList) {
                 productPriceMap.put(productPrice.getString("productPriceTypeId"), productPrice.getBigDecimal("price"));
@@ -5168,13 +5166,45 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
                 itemBasePrice = productPriceMap.get("LIST_PRICE");
             }
         }
-        if (UtilValidate.isNotEmpty(minimumOrderPriceList)) {
-            minimumOrderPrice = EntityUtil.getFirst(minimumOrderPriceList).getBigDecimal("price");
-        }
         if (itemBasePrice != null && minimumOrderPrice.compareTo(itemBasePrice) > 0) {
             minQuantity = minimumOrderPrice.divide(itemBasePrice, 0, BigDecimal.ROUND_UP);
         }
         return minQuantity;
+    }
+
+    interface MinimumOrderPriceListRepository {
+
+        List<GenericValue> getPricesForProduct(String itemProductId) throws GenericEntityException;
+
+        BigDecimal getMinimumOrderPriceFor(String itemProductId) throws GenericEntityException;
+    }
+    static class DelegatingMinimumOrderPriceListRepository implements MinimumOrderPriceListRepository {
+        private Delegator delegator;
+
+        public DelegatingMinimumOrderPriceListRepository(Delegator delegator) {
+            this.delegator = delegator;
+        }
+
+        @Override
+        public List<GenericValue> getPricesForProduct(String itemProductId) throws GenericEntityException {
+            return EntityQuery.use(delegator).from("ProductPrice")
+                                                      .where("productId", itemProductId)
+                                                      .filterByDate()
+                                                      .queryList();
+        }
+
+        @Override
+        public BigDecimal getMinimumOrderPriceFor(String itemProductId) throws GenericEntityException {
+            Collection<GenericValue> minimumOrderPriceList = EntityQuery.use(delegator).from("ProductPrice")
+                    .where("productId", itemProductId, "productPriceTypeId", "MINIMUM_ORDER_PRICE")
+                    .filterByDate()
+                    .queryList();
+            if (UtilValidate.isNotEmpty(minimumOrderPriceList)) {
+                return EntityUtil.getFirst(minimumOrderPriceList).getBigDecimal("price");
+            }
+            return BigDecimal.ZERO;
+        }
+
     }
 
 
