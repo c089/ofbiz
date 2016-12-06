@@ -1,89 +1,126 @@
 package org.apache.ofbiz.order.shoppingcart;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
 
 import static org.apache.ofbiz.order.shoppingcart.ShoppingCartBuilder.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
+@RunWith(Parameterized.class)
 public class ShoppingCartMinimumOrderQuantityTest {
-    @Test
-    public void getMinimumOrderQuantity_should_return_zero_without_itemBasePrice_and_minimumOrderPrice_() throws Exception {
-        ShoppingCart cart = cart()
-                .withMinimumOrderPriceListRepository(minimumOrderPriceRepository()
-                        .withMinimumOrderPriceForAnyProduct(null)
-                        .build())
-                .build();
+    @Parameterized.Parameters
+    public static List data() {
+        return Arrays.asList(new Object[][] {
+                // should be 0 when MinimumOrderPrice and baseItemPrice are not given
+                test()
+                        .withItemBasePrice(null)
+                        .withMinimumOrderPrice(null)
+                        .thenExpect(BigDecimal.ZERO),
+                // should be 0 when minimum order price is 0
+                test()
+                        .withMinimumOrderPrice(BigDecimal.ZERO)
+                        .withItemBasePrice(null)
+                        .thenExpect(BigDecimal.ZERO),
+                // should use MinimumOrderPrice divided by given itemBasePrice
+                test()
+                        .withMinimumOrderPrice(BigDecimal.valueOf(20))
+                        .withItemBasePrice(BigDecimal.valueOf(10))
+                        .thenExpect(BigDecimal.valueOf(2)),
+                // should round quantity up
+                test()
+                        .withMinimumOrderPrice(BigDecimal.valueOf(20))
+                        .withItemBasePrice(BigDecimal.valueOf(15))
+                        .thenExpect(BigDecimal.valueOf(2)),
+                // should use SPECIAL_PROMO price if no itemBasePrice is given
+                test()
+                        .withMinimumOrderPrice(BigDecimal.valueOf(20))
+                        .withSpecialPromoPrice(BigDecimal.valueOf(5))
+                        .thenExpect(BigDecimal.valueOf(4))
+        });
+    }
 
-        BigDecimal result = cart.getMinimumOrderQuantity(null, null);
+    private static TestDataBuilder test() {
+        return new TestDataBuilder();
+    }
 
-        assertThat(result, is(BigDecimal.valueOf(0)));
+    private final BigDecimal minimumOrderPrice;
+    private final BigDecimal itemBasePrice;
+    private final BigDecimal specialPromoPrice;
+
+    private final BigDecimal expectedOrderQuantity;
+
+    public ShoppingCartMinimumOrderQuantityTest(
+            BigDecimal minimumOrderPrice,
+            BigDecimal itemBasePrice,
+            BigDecimal specialPromoPrice,
+            BigDecimal expectedOrderQuantity) {
+        this.minimumOrderPrice = minimumOrderPrice;
+        this.itemBasePrice = itemBasePrice;
+        this.specialPromoPrice = specialPromoPrice;
+        this.expectedOrderQuantity = expectedOrderQuantity;
     }
 
     @Test
-    public void getMinimumOrderQuantity_should_return_zero_when_MinimumOrderPrice_for_product_is_zero() throws Exception {
+    public void test_getMinimumQuantity() throws Exception {
+        ShoppingCart.MinimumOrderPriceListRepository priceListRepository = minimumOrderPriceRepository()
+                .withMinimumOrderPriceForAnyProduct(this.minimumOrderPrice)
+                .withSpecialPromoPriceForAnyProduct(this.specialPromoPrice)
+                .build();
         ShoppingCart cart = cart()
-                .withMinimumOrderPriceListRepository(
-                        minimumOrderPriceRepository()
-                                .withMinimumOrderPriceForAnyProduct(BigDecimal.valueOf(0))
-                                .build())
+                .withMinimumOrderPriceListRepository(priceListRepository)
                 .build();
 
-        BigDecimal result = cart.getMinimumOrderQuantity(null, null);
+        BigDecimal result = cart.getMinimumOrderQuantity(this.itemBasePrice, null);
 
-        assertThat(result, is(BigDecimal.valueOf(0)));
+        assertThat(result, is(this.expectedOrderQuantity));
+    }
+    static class TestDataBuilder {
+        private BigDecimal basePrice;
+        private BigDecimal minimumOrderPrice;
+        private BigDecimal specialPromoPrice;
+
+        private BigDecimal expectedOrderQuantity;
+
+        public TestDataBuilder() {
+        }
+
+        public TestDataBuilder withItemBasePrice(BigDecimal basePrice) {
+            this.basePrice = basePrice;
+            return this;
+        }
+
+        public TestDataBuilder withMinimumOrderPrice(BigDecimal o) {
+            this.minimumOrderPrice = o;
+            return this;
+        }
+
+        public Object[] thenExpect(BigDecimal expected) {
+            this.expectedOrderQuantity = expected;
+            return this.build();
+        }
+
+        public TestDataBuilder withSpecialPromoPrice(BigDecimal specialPromoPrice) {
+            this.specialPromoPrice = specialPromoPrice;
+            return this;
+        }
+        public Object[] build() {
+            return new Object[] {
+                    this.minimumOrderPrice,
+                    this.basePrice,
+                    this.specialPromoPrice,
+                    this.expectedOrderQuantity
+            };
+        }
+
     }
 
     private ShoppingCartTest.MinimumOrderPriceRepositoryBuilder minimumOrderPriceRepository() {
         return new ShoppingCartTest.MinimumOrderPriceRepositoryBuilder();
-    }
-
-    @Test
-    public void getMinimumOrderQuantity_should_return_MinimumOrderPrice_divided_by_given_itemBasePrice() throws Exception {
-        BigDecimal minimumOrderPrice = BigDecimal.valueOf(20);
-        BigDecimal itemBasePrice = BigDecimal.valueOf(10);
-        ShoppingCart cart = cart()
-                .withMinimumOrderPriceListRepository(minimumOrderPriceRepository()
-                        .withMinimumOrderPriceForAnyProduct(minimumOrderPrice)
-                        .build())
-                .build();
-
-        BigDecimal result = cart.getMinimumOrderQuantity(itemBasePrice, "foo");
-        assertThat(result, is(BigDecimal.valueOf(2)));
-    }
-
-    @Test
-    public void getMinimumOrderQuantity_should_round_quantity_up() throws Exception {
-        BigDecimal minimumOrderPrice = BigDecimal.valueOf(20);
-        BigDecimal itemBasePrice = BigDecimal.valueOf(15);
-        ShoppingCart cart = cart()
-                .withMinimumOrderPriceListRepository(minimumOrderPriceRepository()
-                        .withMinimumOrderPriceForAnyProduct(minimumOrderPrice)
-                        .build())
-                .build();
-
-        BigDecimal result = cart.getMinimumOrderQuantity(itemBasePrice, "foo");
-        assertThat(result, is(BigDecimal.valueOf(2)));
-    }
-
-    @Test
-    public void getMinimumOrderQuantity_uses_SPECIAL_PROMO_PRICE_if_no_itemBasePrice_given() throws Exception {
-        final BigDecimal minimumOrderPrice = BigDecimal.valueOf(20);
-        final BigDecimal itemBasePrice = null;
-        final BigDecimal specialPromoPrice = BigDecimal.valueOf(5);
-        final BigDecimal expectedOrderQuantity = BigDecimal.valueOf(4);
-
-        ShoppingCart.MinimumOrderPriceListRepository orderPriceListRepository = minimumOrderPriceRepository()
-                .withMinimumOrderPriceForAnyProduct(minimumOrderPrice)
-                .withSpecialPromoPriceForAnyProduct(specialPromoPrice)
-                .build();
-        ShoppingCart cart = cart()
-                .withMinimumOrderPriceListRepository(orderPriceListRepository)
-                .build();
-
-        BigDecimal result = cart.getMinimumOrderQuantity(itemBasePrice, "foo");
-        assertThat(result, is(expectedOrderQuantity));
     }
 }
