@@ -1,5 +1,6 @@
 package org.apache.ofbiz.order.shoppingcart;
 
+import org.apache.ofbiz.entity.GenericValue;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -40,8 +41,25 @@ public class ShoppingCartMinimumOrderQuantityTest {
                 // should use SPECIAL_PROMO price if no itemBasePrice is given
                 test()
                         .withMinimumOrderPrice(BigDecimal.valueOf(20))
-                        .withSpecialPromoPrice(BigDecimal.valueOf(5))
-                        .thenExpect(BigDecimal.valueOf(4))
+                        .withPrices(new ShoppingCartTest.PriceBuilder()
+                                .withPrice("SPECIAL_PROMO_PRICE", BigDecimal.valueOf(5)))
+                        .thenExpect(BigDecimal.valueOf(4)),
+                // should use PROMO
+                test()
+                        .withMinimumOrderPrice(BigDecimal.valueOf(20))
+                        .withPrices(new ShoppingCartTest.PriceBuilder()
+                                .withPrice("SPECIAL_PROMO_PRICE", null)
+                                .withPrice("PROMO_PRICE", BigDecimal.valueOf(5))
+                        )
+                        .thenExpect(BigDecimal.valueOf(4)),
+                // should prefer SPECIAL_PROMO
+                test()
+                        .withMinimumOrderPrice(BigDecimal.valueOf(20))
+                        .withPrices(new ShoppingCartTest.PriceBuilder()
+                                .withPrice("SPECIAL_PROMO_PRICE", BigDecimal.valueOf(15))
+                                .withPrice("PROMO_PRICE", BigDecimal.valueOf(5))
+                        )
+                        .thenExpect(BigDecimal.valueOf(2))
         });
     }
 
@@ -51,26 +69,25 @@ public class ShoppingCartMinimumOrderQuantityTest {
 
     private final BigDecimal minimumOrderPrice;
     private final BigDecimal itemBasePrice;
-    private final BigDecimal specialPromoPrice;
-
+    private List<GenericValue> prices;
     private final BigDecimal expectedOrderQuantity;
 
     public ShoppingCartMinimumOrderQuantityTest(
             BigDecimal minimumOrderPrice,
             BigDecimal itemBasePrice,
-            BigDecimal specialPromoPrice,
+            List<GenericValue> prices,
             BigDecimal expectedOrderQuantity) {
         this.minimumOrderPrice = minimumOrderPrice;
         this.itemBasePrice = itemBasePrice;
-        this.specialPromoPrice = specialPromoPrice;
+        this.prices = prices;
         this.expectedOrderQuantity = expectedOrderQuantity;
     }
 
     @Test
     public void test_getMinimumQuantity() throws Exception {
         ShoppingCart.MinimumOrderPriceListRepository priceListRepository = minimumOrderPriceRepository()
+                .withPricesForAnyProduct(this.prices)
                 .withMinimumOrderPriceForAnyProduct(this.minimumOrderPrice)
-                .withSpecialPromoPriceForAnyProduct(this.specialPromoPrice)
                 .build();
         ShoppingCart cart = cart()
                 .withMinimumOrderPriceListRepository(priceListRepository)
@@ -83,11 +100,16 @@ public class ShoppingCartMinimumOrderQuantityTest {
     static class TestDataBuilder {
         private BigDecimal basePrice;
         private BigDecimal minimumOrderPrice;
-        private BigDecimal specialPromoPrice;
 
         private BigDecimal expectedOrderQuantity;
+        private List<GenericValue> productPrices = Arrays.asList();
 
         public TestDataBuilder() {
+        }
+
+        public TestDataBuilder withPrices(ShoppingCartTest.PriceBuilder p) {
+            this.productPrices = p.build();
+            return this;
         }
 
         public TestDataBuilder withItemBasePrice(BigDecimal basePrice) {
@@ -105,15 +127,11 @@ public class ShoppingCartMinimumOrderQuantityTest {
             return this.build();
         }
 
-        public TestDataBuilder withSpecialPromoPrice(BigDecimal specialPromoPrice) {
-            this.specialPromoPrice = specialPromoPrice;
-            return this;
-        }
         public Object[] build() {
             return new Object[] {
                     this.minimumOrderPrice,
                     this.basePrice,
-                    this.specialPromoPrice,
+                    this.productPrices,
                     this.expectedOrderQuantity
             };
         }

@@ -295,22 +295,43 @@ public class ShoppingCartTest {
         assertThat(pinRequiredForGC, is(true));
     }
 
+    static class PriceBuilder {
+        private List<GenericValue> productPrices;
+
+        PriceBuilder() {
+            productPrices = new LinkedList<>();
+        }
+
+        List<GenericValue> build() {
+            return this.productPrices;
+        }
+
+        PriceBuilder withPrice(String id, BigDecimal price) {
+            GenericValue value = mock(GenericValue.class);
+            when(value.getString("productPriceTypeId")).thenReturn(id);
+            when(value.getBigDecimal("price")).thenReturn(price);
+            productPrices.add(value);
+            return this;
+        }
+    }
 
     static class MinimumOrderPriceRepositoryBuilder {
         private BigDecimal minimumOrderPrice = BigDecimal.ZERO;
-        private List<GenericValue> productPrices = Collections.emptyList();
+        private List<GenericValue> productPrices;
 
         MinimumOrderPriceRepositoryBuilder withMinimumOrderPriceForAnyProduct(BigDecimal price) {
             this.minimumOrderPrice = price;
             return this;
         }
 
+        public MinimumOrderPriceRepositoryBuilder withPricesForAnyProduct(List<GenericValue> p) {
+            this.productPrices = p;
+            return this;
+        }
+
         ShoppingCart.MinimumOrderPriceListRepository build() {
-            BigDecimal minimumOrderPriceForAllProducts1 = this.minimumOrderPrice;
-            List<GenericValue> productPrices1 = this.productPrices;
             return new ShoppingCart.MinimumOrderPriceListRepository() {
-                private final BigDecimal minimumOrderPriceForAllProducts = minimumOrderPriceForAllProducts1;
-                private List<GenericValue> productPrices = productPrices1;
+                private final BigDecimal minimumOrderPriceForAllProducts = minimumOrderPrice;
 
                 @Override
                 public BigDecimal getMinimumOrderPriceFor(String itemProductId) throws GenericEntityException {
@@ -322,14 +343,6 @@ public class ShoppingCartTest {
                     return productPrices;
                 }
             };
-        }
-
-        public MinimumOrderPriceRepositoryBuilder withSpecialPromoPriceForAnyProduct(BigDecimal specialPromoPrice) {
-            GenericValue specialPromoPriceValue = mock(GenericValue.class);
-            when(specialPromoPriceValue.getString("productPriceTypeId")).thenReturn("SPECIAL_PROMO_PRICE");
-            when(specialPromoPriceValue.getBigDecimal("price")).thenReturn(specialPromoPrice);
-            this.productPrices = Arrays.asList(specialPromoPriceValue);
-            return this;
         }
     }
 
