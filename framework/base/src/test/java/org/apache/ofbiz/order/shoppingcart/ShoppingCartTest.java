@@ -317,15 +317,15 @@ public class ShoppingCartTest {
 
     static class MinimumOrderPriceRepositoryBuilder {
         private BigDecimal minimumOrderPrice = BigDecimal.ZERO;
-        private List<GenericValue> productPrices;
+        private PriceBuilder priceBuilder;
 
         MinimumOrderPriceRepositoryBuilder withMinimumOrderPriceForAnyProduct(BigDecimal price) {
             this.minimumOrderPrice = price;
             return this;
         }
 
-        public MinimumOrderPriceRepositoryBuilder withPricesForAnyProduct(List<GenericValue> p) {
-            this.productPrices = p;
+        public MinimumOrderPriceRepositoryBuilder withPricesForAnyProduct(PriceBuilder p) {
+            priceBuilder = p;
             return this;
         }
 
@@ -340,7 +340,7 @@ public class ShoppingCartTest {
 
                 @Override
                 public List<GenericValue> getPricesForProduct(String itemProductId) throws GenericEntityException {
-                    return productPrices;
+                    return priceBuilder.build();
                 }
             };
         }

@@ -1,6 +1,5 @@
 package org.apache.ofbiz.order.shoppingcart;
 
-import org.apache.ofbiz.entity.GenericValue;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -69,24 +68,25 @@ public class ShoppingCartMinimumOrderQuantityTest {
 
     private final BigDecimal minimumOrderPrice;
     private final BigDecimal itemBasePrice;
-    private List<GenericValue> prices;
     private final BigDecimal expectedOrderQuantity;
+    private ShoppingCartTest.PriceBuilder priceBuilder = new ShoppingCartTest.PriceBuilder();
+
 
     public ShoppingCartMinimumOrderQuantityTest(
             BigDecimal minimumOrderPrice,
             BigDecimal itemBasePrice,
-            List<GenericValue> prices,
+            ShoppingCartTest.PriceBuilder priceBuilder,
             BigDecimal expectedOrderQuantity) {
         this.minimumOrderPrice = minimumOrderPrice;
         this.itemBasePrice = itemBasePrice;
-        this.prices = prices;
         this.expectedOrderQuantity = expectedOrderQuantity;
+        this.priceBuilder = priceBuilder;
     }
 
     @Test
     public void test_getMinimumQuantity() throws Exception {
         ShoppingCart.MinimumOrderPriceListRepository priceListRepository = minimumOrderPriceRepository()
-                .withPricesForAnyProduct(this.prices)
+                .withPricesForAnyProduct(this.priceBuilder)
                 .withMinimumOrderPriceForAnyProduct(this.minimumOrderPrice)
                 .build();
         ShoppingCart cart = cart()
@@ -102,13 +102,13 @@ public class ShoppingCartMinimumOrderQuantityTest {
         private BigDecimal minimumOrderPrice;
 
         private BigDecimal expectedOrderQuantity;
-        private List<GenericValue> productPrices = Arrays.asList();
+        private ShoppingCartTest.PriceBuilder priceBuilder = new ShoppingCartTest.PriceBuilder();
 
         public TestDataBuilder() {
         }
 
         public TestDataBuilder withPrices(ShoppingCartTest.PriceBuilder p) {
-            this.productPrices = p.build();
+            priceBuilder = p;
             return this;
         }
 
@@ -131,7 +131,7 @@ public class ShoppingCartMinimumOrderQuantityTest {
             return new Object[] {
                     this.minimumOrderPrice,
                     this.basePrice,
-                    this.productPrices,
+                    this.priceBuilder,
                     this.expectedOrderQuantity
             };
         }
