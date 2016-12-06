@@ -295,86 +295,8 @@ public class ShoppingCartTest {
         assertThat(pinRequiredForGC, is(true));
     }
 
-    @Test
-    public void getMinimumOrderQuantity_should_return_zero_without_itemBasePrice_and_minimumOrderPrice_() throws Exception {
-        ShoppingCart cart = cart()
-                .withMinimumOrderPriceListRepository(minimumOrderPriceRepository()
-                        .withMinimumOrderPriceForAnyProduct(null)
-                        .build())
-                .build();
 
-        BigDecimal result = cart.getMinimumOrderQuantity(null, null);
-
-        assertThat(result, is(BigDecimal.valueOf(0)));
-    }
-
-    @Test
-    public void getMinimumOrderQuantity_should_return_zero_when_MinimumOrderPrice_for_product_is_zero() throws Exception {
-        ShoppingCart cart = cart()
-                .withMinimumOrderPriceListRepository(
-                        minimumOrderPriceRepository()
-                                .withMinimumOrderPriceForAnyProduct(BigDecimal.valueOf(0))
-                                .build())
-                .build();
-
-        BigDecimal result = cart.getMinimumOrderQuantity(null, null);
-
-        assertThat(result, is(BigDecimal.valueOf(0)));
-    }
-
-    private MinimumOrderPriceRepositoryBuilder minimumOrderPriceRepository() {
-        return new MinimumOrderPriceRepositoryBuilder();
-    }
-
-    @Test
-    public void getMinimumOrderQuantity_should_return_MinimumOrderPrice_divided_by_given_itemBasePrice() throws Exception {
-        BigDecimal minimumOrderPrice = BigDecimal.valueOf(20);
-        BigDecimal itemBasePrice = BigDecimal.valueOf(10);
-        ShoppingCart cart = cart()
-                .withMinimumOrderPriceListRepository(minimumOrderPriceRepository()
-                        .withMinimumOrderPriceForAnyProduct(minimumOrderPrice)
-                        .build())
-                .build();
-
-        BigDecimal result = cart.getMinimumOrderQuantity(itemBasePrice, "foo");
-        assertThat(result, is(BigDecimal.valueOf(2)));
-    }
-
-
-    @Test
-    public void getMinimumOrderQuantity_should_round_quantity_up() throws Exception {
-        BigDecimal minimumOrderPrice = BigDecimal.valueOf(20);
-        BigDecimal itemBasePrice = BigDecimal.valueOf(15);
-        ShoppingCart cart = cart()
-                .withMinimumOrderPriceListRepository(minimumOrderPriceRepository()
-                        .withMinimumOrderPriceForAnyProduct(minimumOrderPrice)
-                        .build())
-                .build();
-
-        BigDecimal result = cart.getMinimumOrderQuantity(itemBasePrice, "foo");
-        assertThat(result, is(BigDecimal.valueOf(2)));
-    }
-
-    @Test
-    public void getMinimumOrderQuantity_uses_SPECIAL_PROMO_PRICE_if_no_itemBasePrice_given() throws Exception {
-        final BigDecimal minimumOrderPrice = BigDecimal.valueOf(20);
-        final BigDecimal itemBasePrice = null;
-        final BigDecimal specialPromoPrice = BigDecimal.valueOf(5);
-        final BigDecimal expectedOrderQuantity = BigDecimal.valueOf(4);
-
-        ShoppingCart.MinimumOrderPriceListRepository orderPriceListRepository = minimumOrderPriceRepository()
-                .withMinimumOrderPriceForAnyProduct(minimumOrderPrice)
-                .withSpecialPromoPriceForAnyProduct(specialPromoPrice)
-                .build();
-        ShoppingCart cart = cart()
-                .withMinimumOrderPriceListRepository(orderPriceListRepository)
-                .build();
-
-        BigDecimal result = cart.getMinimumOrderQuantity(itemBasePrice, "foo");
-        assertThat(result, is(expectedOrderQuantity));
-    }
-
-    class MinimumOrderPriceRepositoryBuilder {
+    static class MinimumOrderPriceRepositoryBuilder {
         private BigDecimal minimumOrderPrice = BigDecimal.ZERO;
         private List<GenericValue> productPrices = Collections.emptyList();
 
@@ -416,7 +338,7 @@ public class ShoppingCartTest {
         return new ProductStoreBuilder();
     }
 
-    private ShoppingCartBuilder cart() {
+    public ShoppingCartBuilder cart() {
         return new ShoppingCartBuilder();
     }
 
@@ -444,110 +366,5 @@ public class ShoppingCartTest {
     }
 
 
-    private class ShoppingCartBuilder {
-        private Delegator delegator = mock(Delegator.class);
-        private GenericValue productStore = mock(GenericValue.class);
-        private Locale defaultLocale = Locale.CANADA;
-        private Locale locale = Locale.US;
-        private String productStoreId = "my_store";
-        private String currency = "EUR";
-        private String defaultCurrency = "USD";
-        private String billFromVendorPartyId = null;
-        private boolean readOnly = false;
-        private ShoppingCart.Logger logger = mock(ShoppingCart.Logger.class);
-        private ShoppingCart.ProductStoreRepository productStoreRepository;
-        private ShoppingCart.MinimumOrderPriceListRepository minimumOrderPriceRepository;
-
-        ShoppingCartBuilder withProductStore(GenericValue store) {
-            this.productStore = store;
-            return this;
-        }
-
-        ShoppingCartBuilder withDefaultLocale(Locale locale) {
-            this.defaultLocale = locale;
-            return this;
-        }
-
-        ShoppingCartBuilder withLocale(Locale locale) {
-            this.locale = locale;
-            return this;
-        }
-
-        ShoppingCartBuilder withProductStoreId(String id) {
-            this.productStoreId = id;
-            return this;
-        }
-
-        ShoppingCartBuilder withCurrency(String currency) {
-            this.currency = currency;
-            return this;
-        }
-
-        ShoppingCartBuilder withDefaultCurrency(String currency) {
-            this.defaultCurrency = currency;
-            return this;
-        }
-
-        ShoppingCartBuilder withBillFromVendorPartyId(String partyId) {
-            this.billFromVendorPartyId = partyId;
-            return this;
-        }
-
-        public ShoppingCartBuilder readOnly() {
-            this.readOnly = true;
-            return this;
-        }
-
-        public ShoppingCartBuilder withLogger(ShoppingCart.Logger logger) {
-            this.logger = logger;
-            return this;
-        }
-
-        public ShoppingCartBuilder withProductStoreRepository(ShoppingCart.ProductStoreRepository repository) {
-            this.productStoreRepository = repository;
-            return this;
-        }
-
-        ShoppingCart build() {
-            ShoppingCart cart = new ShoppingCart(this.delegator, this.productStoreId, "websiteid", this.locale, this.currency, null, this.billFromVendorPartyId) {
-                @Override
-                protected Locale getDefaultLocale() {
-                    return defaultLocale;
-                }
-
-                @Override
-                protected GenericValue loadProductStore(Delegator delegator, String productStoreId) {
-                    return productStore;
-                }
-
-                @Override
-                protected String getDefaultCurrency(Delegator delegator) {
-                    return defaultCurrency;
-                }
-
-                @Override
-                protected Logger getLogger() {
-                    return logger;
-                }
-
-                @Override
-                protected ProductStoreRepository getProductStoreRepository() {
-                    return productStoreRepository;
-                }
-
-                @Override
-                protected MinimumOrderPriceListRepository getMinimumOrderPriceListRepository() {
-                    return minimumOrderPriceRepository;
-                }
-            };
-            cart.setReadOnlyCart(this.readOnly);
-            return cart;
-        }
-
-        public ShoppingCartBuilder withMinimumOrderPriceListRepository(ShoppingCart.MinimumOrderPriceListRepository testMinimumOrderPriceListRepository) {
-            this.minimumOrderPriceRepository = testMinimumOrderPriceListRepository;
-            return this;
-        }
-    }
-
 }
+
