@@ -39,6 +39,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.TreeMap;
+import java.util.stream.Stream;
 
 import org.apache.ofbiz.base.util.Debug;
 import org.apache.ofbiz.base.util.GeneralException;
@@ -5164,15 +5165,11 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
             for (GenericValue productPrice : productPriceList) {
                 productPriceMap.put(productPrice.getString("productPriceTypeId"), productPrice.getBigDecimal("price"));
             }
-            if (UtilValidate.isNotEmpty(productPriceMap.get("SPECIAL_PROMO_PRICE"))) {
-                itemBasePrice = productPriceMap.get("SPECIAL_PROMO_PRICE");
-            } else if (UtilValidate.isNotEmpty(productPriceMap.get("PROMO_PRICE"))) {
-                itemBasePrice = productPriceMap.get("PROMO_PRICE");
-            } else if (UtilValidate.isNotEmpty(productPriceMap.get("DEFAULT_PRICE"))) {
-                itemBasePrice = productPriceMap.get("DEFAULT_PRICE");
-            } else if (UtilValidate.isNotEmpty(productPriceMap.get("LIST_PRICE"))) {
-                itemBasePrice = productPriceMap.get("LIST_PRICE");
-            }
+            itemBasePrice = Stream.of("SPECIAL_PROMO_PRICE", "PROMO_PRICE", "DEFAULT_PRICE", "LIST_PRICE")
+                    .map(productPriceMap::get)
+                    .filter(UtilValidate::isNotEmpty)
+                    .findFirst()
+                    .orElse(null);
         }
         if (itemBasePrice != null && minimumOrderPrice.compareTo(itemBasePrice) > 0) {
             minQuantity = minimumOrderPrice.divide(itemBasePrice, 0, BigDecimal.ROUND_UP);
