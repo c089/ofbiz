@@ -58,6 +58,30 @@ public class ShoppingCartMinimumOrderQuantityTest {
                                 .withPrice("SPECIAL_PROMO_PRICE", BigDecimal.valueOf(15))
                                 .withPrice("PROMO_PRICE", BigDecimal.valueOf(5))
                         )
+                        .thenExpect(BigDecimal.valueOf(2)),
+                // should prefer PROMO_PRICE over DEFAULT_PRICE
+                test()
+                        .withMinimumOrderPrice(BigDecimal.valueOf(10))
+                        .withPrices(new PriceBuilder()
+                                .withPrice("DEFAULT_PRICE", BigDecimal.valueOf(15))
+                                .withPrice("PROMO_PRICE", BigDecimal.valueOf(5))
+                        )
+                        .thenExpect(BigDecimal.valueOf(2)),
+                // should prefer DEFAULT_PRICE over LIST_PRICE
+                test()
+                        .withMinimumOrderPrice(BigDecimal.valueOf(10))
+                        .withPrices(new PriceBuilder()
+                                .withPrice("LIST_PRICE", BigDecimal.valueOf(15))
+                                .withPrice("DEFAULT_PRICE", BigDecimal.valueOf(5))
+                        )
+                        .thenExpect(BigDecimal.valueOf(2)),
+                // should use LIST_PRICE if no other price was given
+                test()
+                        .withMinimumOrderPrice(BigDecimal.valueOf(10))
+                        .withItemBasePrice(null)
+                        .withPrices(new PriceBuilder()
+                                .withPrice("LIST_PRICE", BigDecimal.valueOf(5))
+                        )
                         .thenExpect(BigDecimal.valueOf(2))
         });
     }
