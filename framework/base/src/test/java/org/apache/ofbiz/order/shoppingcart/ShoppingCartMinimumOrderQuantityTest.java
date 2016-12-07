@@ -40,13 +40,13 @@ public class ShoppingCartMinimumOrderQuantityTest {
                 // should use SPECIAL_PROMO price if no itemBasePrice is given
                 test()
                         .withMinimumOrderPrice(BigDecimal.valueOf(20))
-                        .withPrices(new ShoppingCartTest.PriceBuilder()
+                        .withPrices(new PriceBuilder()
                                 .withPrice("SPECIAL_PROMO_PRICE", BigDecimal.valueOf(5)))
                         .thenExpect(BigDecimal.valueOf(4)),
                 // should use PROMO
                 test()
                         .withMinimumOrderPrice(BigDecimal.valueOf(20))
-                        .withPrices(new ShoppingCartTest.PriceBuilder()
+                        .withPrices(new PriceBuilder()
                                 .withPrice("SPECIAL_PROMO_PRICE", null)
                                 .withPrice("PROMO_PRICE", BigDecimal.valueOf(5))
                         )
@@ -54,7 +54,7 @@ public class ShoppingCartMinimumOrderQuantityTest {
                 // should prefer SPECIAL_PROMO
                 test()
                         .withMinimumOrderPrice(BigDecimal.valueOf(20))
-                        .withPrices(new ShoppingCartTest.PriceBuilder()
+                        .withPrices(new PriceBuilder()
                                 .withPrice("SPECIAL_PROMO_PRICE", BigDecimal.valueOf(15))
                                 .withPrice("PROMO_PRICE", BigDecimal.valueOf(5))
                         )
@@ -69,13 +69,13 @@ public class ShoppingCartMinimumOrderQuantityTest {
     private final BigDecimal minimumOrderPrice;
     private final BigDecimal itemBasePrice;
     private final BigDecimal expectedOrderQuantity;
-    private ShoppingCartTest.PriceBuilder priceBuilder = new ShoppingCartTest.PriceBuilder();
+    private PriceBuilder priceBuilder = new PriceBuilder();
 
 
     public ShoppingCartMinimumOrderQuantityTest(
             BigDecimal minimumOrderPrice,
             BigDecimal itemBasePrice,
-            ShoppingCartTest.PriceBuilder priceBuilder,
+            PriceBuilder priceBuilder,
             BigDecimal expectedOrderQuantity) {
         this.minimumOrderPrice = minimumOrderPrice;
         this.itemBasePrice = itemBasePrice;
@@ -102,12 +102,12 @@ public class ShoppingCartMinimumOrderQuantityTest {
         private BigDecimal minimumOrderPrice;
 
         private BigDecimal expectedOrderQuantity;
-        private ShoppingCartTest.PriceBuilder priceBuilder = new ShoppingCartTest.PriceBuilder();
+        private PriceBuilder priceBuilder = new PriceBuilder();
 
         public TestDataBuilder() {
         }
 
-        public TestDataBuilder withPrices(ShoppingCartTest.PriceBuilder p) {
+        public TestDataBuilder withPrices(PriceBuilder p) {
             priceBuilder = p;
             return this;
         }
@@ -138,7 +138,7 @@ public class ShoppingCartMinimumOrderQuantityTest {
 
     }
 
-    private ShoppingCartTest.MinimumOrderPriceRepositoryBuilder minimumOrderPriceRepository() {
-        return new ShoppingCartTest.MinimumOrderPriceRepositoryBuilder();
+    private MinimumOrderPriceRepositoryBuilder minimumOrderPriceRepository() {
+        return new MinimumOrderPriceRepositoryBuilder();
     }
 }

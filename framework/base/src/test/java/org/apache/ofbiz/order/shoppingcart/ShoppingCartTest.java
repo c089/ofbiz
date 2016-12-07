@@ -295,57 +295,6 @@ public class ShoppingCartTest {
         assertThat(pinRequiredForGC, is(true));
     }
 
-    static class PriceBuilder {
-        private List<GenericValue> productPrices;
-
-        PriceBuilder() {
-            productPrices = new LinkedList<>();
-        }
-
-        List<GenericValue> build() {
-            return this.productPrices;
-        }
-
-        PriceBuilder withPrice(String id, BigDecimal price) {
-            GenericValue value = mock(GenericValue.class);
-            when(value.getString("productPriceTypeId")).thenReturn(id);
-            when(value.getBigDecimal("price")).thenReturn(price);
-            productPrices.add(value);
-            return this;
-        }
-    }
-
-    static class MinimumOrderPriceRepositoryBuilder {
-        private BigDecimal minimumOrderPrice = BigDecimal.ZERO;
-        private PriceBuilder priceBuilder;
-
-        MinimumOrderPriceRepositoryBuilder withMinimumOrderPriceForAnyProduct(BigDecimal price) {
-            this.minimumOrderPrice = price;
-            return this;
-        }
-
-        public MinimumOrderPriceRepositoryBuilder withPricesForAnyProduct(PriceBuilder p) {
-            priceBuilder = p;
-            return this;
-        }
-
-        ShoppingCart.MinimumOrderPriceListRepository build() {
-            return new ShoppingCart.MinimumOrderPriceListRepository() {
-                private final BigDecimal minimumOrderPriceForAllProducts = minimumOrderPrice;
-
-                @Override
-                public BigDecimal getMinimumOrderPriceFor(String itemProductId) throws GenericEntityException {
-                    return minimumOrderPriceForAllProducts;
-                }
-
-                @Override
-                public List<GenericValue> getPricesForProduct(String itemProductId) throws GenericEntityException {
-                    return priceBuilder.build();
-                }
-            };
-        }
-    }
-
 
     private ProductStoreBuilder productStore() {
         return new ProductStoreBuilder();
