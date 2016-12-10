@@ -6,6 +6,7 @@ import org.apache.ofbiz.entity.GenericValue;
 import org.apache.ofbiz.product.config.ProductConfigWrapper;
 import org.apache.ofbiz.service.GenericServiceException;
 import org.apache.ofbiz.service.LocalDispatcher;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -30,8 +31,20 @@ public class ShoppingCartTest {
     private static final BigDecimal IRRELEVANT_BIG_DECIMAL = new BigDecimal(15.0);
     private static final Timestamp IRRELEVANT_TIMESTAMP = new Timestamp(325L);
     private static final String IRRELEVANT_STRING = "productId";
+    private static final ShoppingCartItem SHOPPING_CART_ITEM = new ShoppingCartItem();
+    private static final GenericValue SUPPLIER = new GenericValue();
+
     @Rule
     public ExpectedException thrown = ExpectedException.none();
+
+    private ProductConfigWrapper configWrapper;
+    private LocalDispatcher dispatcher;
+
+    @Before
+    public void setUp() {
+        configWrapper = mock(ProductConfigWrapper.class);
+        dispatcher = mock(LocalDispatcher.class);
+    }
 
     @Test
     public void initializesEmptyCart() throws Exception {
@@ -88,7 +101,7 @@ public class ShoppingCartTest {
                 .withDefaultCurrency("EUR")
                 .build();
 
-        Map<String, Object> cartMap = cart.makeCartMap(mock(LocalDispatcher.class), false);
+        Map<String, Object> cartMap = cart.makeCartMap(dispatcher, false);
 
         assertThat(cartMap.get("currencyUom"), is("EUR"));
     }
@@ -298,8 +311,6 @@ public class ShoppingCartTest {
     @Test
     public void
     addOrIncreaseItem_should_throw_error_when_card_is_read_only() throws ItemNotFoundException, CartItemModifyException {
-        ProductConfigWrapper configWrapper = mock(ProductConfigWrapper.class);
-        LocalDispatcher dispatcher = mock(LocalDispatcher.class);
         ShoppingCart cart = cart()
                 .readOnly()
                 .build();
@@ -307,90 +318,63 @@ public class ShoppingCartTest {
         thrown.expect(CartItemModifyException.class);
         thrown.expectMessage("Cart items cannot be changed");
 
-        cart.addOrIncreaseItem(IRRELEVANT_STRING, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_TIMESTAMP,
-                IRRELEVANT_BIG_DECIMAL, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_STRING, IRRELEVANT_STRING,
-                IRRELEVANT_TIMESTAMP, IRRELEVANT_TIMESTAMP, new HashMap<>(), new HashMap<>(),
-                new HashMap<>(), IRRELEVANT_STRING, configWrapper, IRRELEVANT_STRING
-                , IRRELEVANT_STRING, IRRELEVANT_STRING, dispatcher);
+        addOrIncreaseItemOnWithGenericParameters(cart);
     }
 
     @Test
     public void
     addOrIncreaseItem_should_throw_an_exception_when_adding_a_new_empty_purchase_order_basket_with_missing_supplier_product_and_an_applicable_party_id() throws ItemNotFoundException, CartItemModifyException, GenericServiceException {
-        ProductConfigWrapper configWrapper = mock(ProductConfigWrapper.class);
-        LocalDispatcher dispatcher = mock(LocalDispatcher.class);
         when(dispatcher.runSync(eq("getSuppliersForProduct"), any()))
                 .thenThrow(new GenericServiceException());
         ShoppingCart cart = cart()
+                .asPurchaseOrderCart()
+                .withPartyId("not _NA_")
                 .build();
-        cart.setOrderType("PURCHASE_ORDER");
-        cart.setOrderPartyId("not _NA_");
 
         thrown.expect(CartItemModifyException.class);
         thrown.expectMessage("SupplierProduct not found");
 
-        cart.addOrIncreaseItem(IRRELEVANT_STRING, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_TIMESTAMP,
-                IRRELEVANT_BIG_DECIMAL, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_STRING, IRRELEVANT_STRING,
-                IRRELEVANT_TIMESTAMP, IRRELEVANT_TIMESTAMP, new HashMap<>(), new HashMap<>(),
-                new HashMap<>(), IRRELEVANT_STRING, configWrapper, IRRELEVANT_STRING
-                , IRRELEVANT_STRING, IRRELEVANT_STRING, dispatcher);
+        addOrIncreaseItemOnWithGenericParameters(cart);
     }
+
     @Test
     public void
     addOrIncreaseItem_should_add_an_item_to_a_purchase_order_where_party_id_is_na() throws ItemNotFoundException, CartItemModifyException, GenericServiceException {
-        ProductConfigWrapper configWrapper = mock(ProductConfigWrapper.class);
-        LocalDispatcher dispatcher = mock(LocalDispatcher.class);
         when(dispatcher.runSync(eq("getSuppliersForProduct"), any()))
                 .thenThrow(new GenericServiceException());
-        ShoppingCartItem item = new ShoppingCartItem();
         ShoppingCart cart = cart()
-                .createsPurchaseOrderItem(item)
+                .asPurchaseOrderCart()
+                .withPartyId("_NA_")
+                .createsPurchaseOrderItem(SHOPPING_CART_ITEM)
                 .build();
-        cart.setOrderType("PURCHASE_ORDER");
-        cart.setOrderPartyId("_NA_");
 
-       cart.addOrIncreaseItem(IRRELEVANT_STRING, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_TIMESTAMP,
-                IRRELEVANT_BIG_DECIMAL, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_STRING, IRRELEVANT_STRING,
-                IRRELEVANT_TIMESTAMP, IRRELEVANT_TIMESTAMP, new HashMap<>(), new HashMap<>(),
-                new HashMap<>(), IRRELEVANT_STRING, configWrapper, IRRELEVANT_STRING
-                , IRRELEVANT_STRING, IRRELEVANT_STRING, dispatcher);
-        assertThat(cart.items(), contains(item));
+        addOrIncreaseItemOnWithGenericParameters(cart);
+
+        assertThat(cart.items(), contains(SHOPPING_CART_ITEM));
     }
 
     @Test
     public void
     addOrIncreaseItem_should_add_an_item_to_a_purchase_order_where_a_supplier_product_is_returned() throws ItemNotFoundException, CartItemModifyException, GenericServiceException {
-        ProductConfigWrapper configWrapper = mock(ProductConfigWrapper.class);
-        LocalDispatcher dispatcher = mock(LocalDispatcher.class);
-        Map<String, Object> suppliers = new HashMap<>();
-        GenericValue supplierProduct = new GenericValue();
-        suppliers.put("supplierProducts", singletonList(supplierProduct));
-        when(dispatcher.runSync(eq("getSuppliersForProduct"), any()))
-                .thenReturn(suppliers);
-        ShoppingCartItem item = new ShoppingCartItem();
+        givenDispatcherReturnsValidSupplier();
         ShoppingCart cart = cart()
-                .createsPurchaseOrderItem(item)
+                .asPurchaseOrderCart()
+                .withPartyId("not _NA_")
+                .createsPurchaseOrderItem(SHOPPING_CART_ITEM)
                 .build();
-        cart.setOrderType("PURCHASE_ORDER");
-        cart.setOrderPartyId("not _NA_");
 
-        cart.addOrIncreaseItem(IRRELEVANT_STRING, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_TIMESTAMP,
-                IRRELEVANT_BIG_DECIMAL, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_STRING, IRRELEVANT_STRING,
-                IRRELEVANT_TIMESTAMP, IRRELEVANT_TIMESTAMP, new HashMap<>(), new HashMap<>(),
-                new HashMap<>(), IRRELEVANT_STRING, configWrapper, IRRELEVANT_STRING
-                , IRRELEVANT_STRING, IRRELEVANT_STRING, dispatcher);
-        assertThat(cart.items(), contains(item));
+        addOrIncreaseItemOnWithGenericParameters(cart);
+
+        assertThat(cart.items(), contains(SHOPPING_CART_ITEM));
     }
 
     @Test
     public void
     getSupplierProduct_returns_null_if_dispatcher_throws_an_error() throws GenericServiceException {
-        LocalDispatcher dispatcher = mock(LocalDispatcher.class);
         when(dispatcher.runSync(eq("getSuppliersForProduct"), any()))
                 .thenThrow(new GenericServiceException());
 
-        ShoppingCart cart = cart()
-                .build();
+        ShoppingCart cart = cart().build();
 
         GenericValue supplierProduct = cart.getSupplierProduct(IRRELEVANT_STRING, IRRELEVANT_BIG_DECIMAL, dispatcher);
 
@@ -400,20 +384,12 @@ public class ShoppingCartTest {
     @Test
     public void
     getSupplierProduct_returns_supplier_product_if_dispatcher_returns_a_supplier() throws GenericServiceException {
-        LocalDispatcher dispatcher = mock(LocalDispatcher.class);
-
-        Map<String, Object> suppliers = new HashMap<>();
-        GenericValue supplierProduct = new GenericValue();
-        suppliers.put("supplierProducts", singletonList(supplierProduct));
-        when(dispatcher.runSync(eq("getSuppliersForProduct"), any()))
-                .thenReturn(suppliers);
-
-        ShoppingCart cart = cart()
-                .build();
+        givenDispatcherReturnsValidSupplier();
+        ShoppingCart cart = cart().build();
 
         GenericValue result = cart.getSupplierProduct(IRRELEVANT_STRING, IRRELEVANT_BIG_DECIMAL, dispatcher);
 
-        assertThat(result, is(supplierProduct));
+        assertThat(result, is(SUPPLIER));
     }
 
     private ProductStoreBuilder productStore() {
@@ -422,6 +398,21 @@ public class ShoppingCartTest {
 
     private ShoppingCartBuilder cart() {
         return new ShoppingCartBuilder();
+    }
+
+    private void givenDispatcherReturnsValidSupplier() throws GenericServiceException {
+        Map<String, Object> suppliers = new HashMap<>();
+        suppliers.put("supplierProducts", singletonList(SUPPLIER));
+        when(dispatcher.runSync(eq("getSuppliersForProduct"), any()))
+                .thenReturn(suppliers);
+    }
+
+    private void addOrIncreaseItemOnWithGenericParameters(ShoppingCart cart) throws CartItemModifyException, ItemNotFoundException {
+        cart.addOrIncreaseItem(IRRELEVANT_STRING, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_TIMESTAMP,
+                IRRELEVANT_BIG_DECIMAL, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_STRING, IRRELEVANT_STRING,
+                IRRELEVANT_TIMESTAMP, IRRELEVANT_TIMESTAMP, new HashMap<>(), new HashMap<>(),
+                new HashMap<>(), IRRELEVANT_STRING, configWrapper, IRRELEVANT_STRING
+                , IRRELEVANT_STRING, IRRELEVANT_STRING, dispatcher);
     }
 
     private class ProductStoreBuilder {
