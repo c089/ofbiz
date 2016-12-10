@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static java.util.Collections.singletonList;
 import static java.util.Locale.CANADA;
 import static java.util.Locale.US;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -311,7 +312,6 @@ public class ShoppingCartTest {
                 IRRELEVANT_TIMESTAMP, IRRELEVANT_TIMESTAMP, new HashMap<>(), new HashMap<>(),
                 new HashMap<>(), IRRELEVANT_STRING, configWrapper, IRRELEVANT_STRING
                 , IRRELEVANT_STRING, IRRELEVANT_STRING, dispatcher);
-
     }
 
     @Test
@@ -334,7 +334,52 @@ public class ShoppingCartTest {
                 IRRELEVANT_TIMESTAMP, IRRELEVANT_TIMESTAMP, new HashMap<>(), new HashMap<>(),
                 new HashMap<>(), IRRELEVANT_STRING, configWrapper, IRRELEVANT_STRING
                 , IRRELEVANT_STRING, IRRELEVANT_STRING, dispatcher);
+    }
+    @Test
+    public void
+    addOrIncreaseItem_should_add_an_item_to_a_purchase_order_where_party_id_is_na() throws ItemNotFoundException, CartItemModifyException, GenericServiceException {
+        ProductConfigWrapper configWrapper = mock(ProductConfigWrapper.class);
+        LocalDispatcher dispatcher = mock(LocalDispatcher.class);
+        when(dispatcher.runSync(eq("getSuppliersForProduct"), any()))
+                .thenThrow(new GenericServiceException());
+        ShoppingCartItem item = new ShoppingCartItem();
+        ShoppingCart cart = cart()
+                .createsPurchaseOrderItem(item)
+                .build();
+        cart.setOrderType("PURCHASE_ORDER");
+        cart.setOrderPartyId("_NA_");
 
+       cart.addOrIncreaseItem(IRRELEVANT_STRING, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_TIMESTAMP,
+                IRRELEVANT_BIG_DECIMAL, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_STRING, IRRELEVANT_STRING,
+                IRRELEVANT_TIMESTAMP, IRRELEVANT_TIMESTAMP, new HashMap<>(), new HashMap<>(),
+                new HashMap<>(), IRRELEVANT_STRING, configWrapper, IRRELEVANT_STRING
+                , IRRELEVANT_STRING, IRRELEVANT_STRING, dispatcher);
+        assertThat(cart.items(), contains(item));
+    }
+
+    @Test
+    public void
+    addOrIncreaseItem_should_add_an_item_to_a_purchase_order_where_a_supplier_product_is_returned() throws ItemNotFoundException, CartItemModifyException, GenericServiceException {
+        ProductConfigWrapper configWrapper = mock(ProductConfigWrapper.class);
+        LocalDispatcher dispatcher = mock(LocalDispatcher.class);
+        Map<String, Object> suppliers = new HashMap<>();
+        GenericValue supplierProduct = new GenericValue();
+        suppliers.put("supplierProducts", singletonList(supplierProduct));
+        when(dispatcher.runSync(eq("getSuppliersForProduct"), any()))
+                .thenReturn(suppliers);
+        ShoppingCartItem item = new ShoppingCartItem();
+        ShoppingCart cart = cart()
+                .createsPurchaseOrderItem(item)
+                .build();
+        cart.setOrderType("PURCHASE_ORDER");
+        cart.setOrderPartyId("not _NA_");
+
+        cart.addOrIncreaseItem(IRRELEVANT_STRING, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_TIMESTAMP,
+                IRRELEVANT_BIG_DECIMAL, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_STRING, IRRELEVANT_STRING,
+                IRRELEVANT_TIMESTAMP, IRRELEVANT_TIMESTAMP, new HashMap<>(), new HashMap<>(),
+                new HashMap<>(), IRRELEVANT_STRING, configWrapper, IRRELEVANT_STRING
+                , IRRELEVANT_STRING, IRRELEVANT_STRING, dispatcher);
+        assertThat(cart.items(), contains(item));
     }
 
     @Test
@@ -350,6 +395,25 @@ public class ShoppingCartTest {
         GenericValue supplierProduct = cart.getSupplierProduct(IRRELEVANT_STRING, IRRELEVANT_BIG_DECIMAL, dispatcher);
 
         assertThat(supplierProduct, is(nullValue()));
+    }
+
+    @Test
+    public void
+    getSupplierProduct_returns_supplier_product_if_dispatcher_returns_a_supplier() throws GenericServiceException {
+        LocalDispatcher dispatcher = mock(LocalDispatcher.class);
+
+        Map<String, Object> suppliers = new HashMap<>();
+        GenericValue supplierProduct = new GenericValue();
+        suppliers.put("supplierProducts", singletonList(supplierProduct));
+        when(dispatcher.runSync(eq("getSuppliersForProduct"), any()))
+                .thenReturn(suppliers);
+
+        ShoppingCart cart = cart()
+                .build();
+
+        GenericValue result = cart.getSupplierProduct(IRRELEVANT_STRING, IRRELEVANT_BIG_DECIMAL, dispatcher);
+
+        assertThat(result, is(supplierProduct));
     }
 
     private ProductStoreBuilder productStore() {
