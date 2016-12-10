@@ -2,8 +2,13 @@ package org.apache.ofbiz.order.shoppingcart;
 
 import org.apache.ofbiz.entity.Delegator;
 import org.apache.ofbiz.entity.GenericValue;
+import org.apache.ofbiz.product.config.ProductConfigWrapper;
+import org.apache.ofbiz.service.LocalDispatcher;
 
+import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.util.Locale;
+import java.util.Map;
 
 import static org.mockito.Mockito.mock;
 
@@ -20,6 +25,7 @@ class ShoppingCartBuilder {
     private ShoppingCart.Logger logger = mock(ShoppingCart.Logger.class);
     private ShoppingCart.ProductStoreRepository productStoreRepository;
     private ShoppingCart.MinimumOrderPriceListRepository minimumOrderPriceRepository;
+    private ShoppingCartItem purchaseOrderItem;
 
     public static ShoppingCartBuilder cart() {
         return new ShoppingCartBuilder();
@@ -75,6 +81,11 @@ class ShoppingCartBuilder {
         return this;
     }
 
+    public ShoppingCartBuilder createsPurchaseOrderItem(ShoppingCartItem item) {
+        this.purchaseOrderItem = item;
+        return this;
+    }
+
     ShoppingCart build() {
         ShoppingCart cart = new ShoppingCart(this.delegator, this.productStoreId, "websiteid", this.locale, this.currency, null, this.billFromVendorPartyId) {
             @Override
@@ -105,6 +116,11 @@ class ShoppingCartBuilder {
             @Override
             protected MinimumOrderPriceListRepository getMinimumOrderPriceListRepository() {
                 return minimumOrderPriceRepository;
+            }
+
+            @Override
+            protected ShoppingCartItem makePurchaseOrderItem(String productId, BigDecimal selectedAmount, BigDecimal quantity, Timestamp shipBeforeDate, Timestamp shipAfterDate, Map<String, GenericValue> features, Map<String, Object> attributes, String prodCatalogId, ProductConfigWrapper configWrapper, String itemType, LocalDispatcher dispatcher, ShoppingCartItemGroup itemGroup, GenericValue supplierProduct) throws CartItemModifyException, ItemNotFoundException {
+                return purchaseOrderItem;
             }
         };
         cart.setReadOnlyCart(this.readOnly);
