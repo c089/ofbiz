@@ -21,11 +21,13 @@ class ShoppingCartBuilder {
     private String currency = "EUR";
     private String defaultCurrency = "USD";
     private String billFromVendorPartyId = null;
+    private String orderType;
     private boolean readOnly = false;
     private ShoppingCart.Logger logger = mock(ShoppingCart.Logger.class);
     private ShoppingCart.ProductStoreRepository productStoreRepository;
     private ShoppingCart.MinimumOrderPriceListRepository minimumOrderPriceRepository;
     private ShoppingCartItem purchaseOrderItem;
+    private String partyId;
 
     public static ShoppingCartBuilder cart() {
         return new ShoppingCartBuilder();
@@ -124,11 +126,23 @@ class ShoppingCartBuilder {
             }
         };
         cart.setReadOnlyCart(this.readOnly);
+        cart.setOrderType(this.orderType);
+        cart.setOrderPartyId(this.partyId);
         return cart;
     }
 
     public ShoppingCartBuilder withMinimumOrderPriceListRepository(ShoppingCart.MinimumOrderPriceListRepository testMinimumOrderPriceListRepository) {
         this.minimumOrderPriceRepository = testMinimumOrderPriceListRepository;
+        return this;
+    }
+
+    public ShoppingCartBuilder asPurchaseOrderCart() {
+        this.orderType = "PURCHASE_ORDER";
+        return this;
+    }
+
+    public ShoppingCartBuilder withPartyId(String partyId) {
+        this.partyId = partyId;
         return this;
     }
 }
