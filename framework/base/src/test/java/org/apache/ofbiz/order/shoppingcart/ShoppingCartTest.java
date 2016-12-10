@@ -9,9 +9,14 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
+import static java.util.Locale.CANADA;
+import static java.util.Locale.US;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.Mockito.*;
 
@@ -41,19 +46,19 @@ public class ShoppingCartTest {
     public void fallsBackToDefaultLocale() {
         ShoppingCart cart = cart()
                 .withLocale(null)
-                .withDefaultLocale(Locale.CANADA)
+                .withDefaultLocale(CANADA)
                 .build();
-        assertThat(cart.getLocale(), is(Locale.CANADA));
+        assertThat(cart.getLocale(), is(CANADA));
     }
 
     @Test
     public void usesGivenLocale() {
         ShoppingCart cart = cart()
-                .withLocale(Locale.US)
-                .withDefaultLocale(Locale.CANADA)
+                .withLocale(US)
+                .withDefaultLocale(CANADA)
                 .build();
 
-        assertThat(cart.getLocale(), is(Locale.US));
+        assertThat(cart.getLocale(), is(US));
     }
 
     @Test
@@ -184,7 +189,7 @@ public class ShoppingCartTest {
         int result2 = cart.addItem(1, item);
 
         assertThat(result2, is(0));
-        assertThat(cart.items(), is(Arrays.asList(item)));
+        assertThat(cart.items(), contains(item));
     }
 
     @Test
@@ -205,11 +210,8 @@ public class ShoppingCartTest {
         assertThat(ShoppingCart.getItemsProducts(items), is(Arrays.asList(product1, product2)));
     }
 
-    ShoppingCart.ProductStoreRepository productStoreRepository = new ShoppingCart.ProductStoreRepository() {
-        @Override
-        public GenericValue giftCertSettings(String s) throws GenericEntityException {
-            throw new GenericEntityException("my message");
-        }
+    private ShoppingCart.ProductStoreRepository productStoreRepository = s -> {
+        throw new GenericEntityException("my message");
     };
 
     @Test
@@ -239,13 +241,10 @@ public class ShoppingCartTest {
 
     @Test
     public void isPinRequiredForGC_should_be_true_when_GiftCertSettings_requirePinCode_is_set_to_Y() throws Exception {
-        ShoppingCart.ProductStoreRepository repository = new ShoppingCart.ProductStoreRepository() {
-            @Override
-            public GenericValue giftCertSettings(String productStoreId) throws GenericEntityException {
-                GenericValue value = mock(GenericValue.class);
-                when(value.getString("requirePinCode")).thenReturn("Y");
-                return value;
-            }
+        ShoppingCart.ProductStoreRepository repository = productStoreId -> {
+            GenericValue value = mock(GenericValue.class);
+            when(value.getString("requirePinCode")).thenReturn("Y");
+            return value;
         };
 
         ShoppingCart cart = cart()
@@ -258,13 +257,10 @@ public class ShoppingCartTest {
 
     @Test
     public void isPinRequiredForGC_should_be_false_when_GiftCertSettings_requirePinCode_is_set_to_N() throws Exception {
-        ShoppingCart.ProductStoreRepository repository = new ShoppingCart.ProductStoreRepository() {
-            @Override
-            public GenericValue giftCertSettings(String productStoreId) throws GenericEntityException {
-                GenericValue value = mock(GenericValue.class);
-                when(value.getString("requirePinCode")).thenReturn("N");
-                return value;
-            }
+        ShoppingCart.ProductStoreRepository repository = productStoreId -> {
+            GenericValue value = mock(GenericValue.class);
+            when(value.getString("requirePinCode")).thenReturn("N");
+            return value;
         };
 
         ShoppingCart cart = cart()
@@ -295,7 +291,7 @@ public class ShoppingCartTest {
         return new ProductStoreBuilder();
     }
 
-    public ShoppingCartBuilder cart() {
+    private ShoppingCartBuilder cart() {
         return new ShoppingCartBuilder();
     }
 
@@ -316,12 +312,10 @@ public class ShoppingCartTest {
             return productStore;
         }
 
-        public ProductStoreBuilder withFacilityId(String facilityId) {
+        ProductStoreBuilder withFacilityId(String facilityId) {
             this.facilityId = facilityId;
             return this;
         }
     }
-
-
 }
 
