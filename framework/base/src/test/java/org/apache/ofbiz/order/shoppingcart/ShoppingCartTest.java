@@ -4,6 +4,7 @@ import org.apache.ofbiz.entity.Delegator;
 import org.apache.ofbiz.entity.GenericEntityException;
 import org.apache.ofbiz.entity.GenericValue;
 import org.apache.ofbiz.product.config.ProductConfigWrapper;
+import org.apache.ofbiz.service.GenericServiceException;
 import org.apache.ofbiz.service.LocalDispatcher;
 import org.junit.Rule;
 import org.junit.Test;
@@ -20,6 +21,7 @@ import static java.util.Locale.CANADA;
 import static java.util.Locale.US;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.mockito.Mockito.*;
 
@@ -292,10 +294,11 @@ public class ShoppingCartTest {
         assertThat(pinRequiredForGC, is(true));
     }
 
-    @Test public void
+    @Test
+    public void
     addOrIncreaseItem_should_throw_error_when_card_is_read_only() throws ItemNotFoundException, CartItemModifyException {
         ProductConfigWrapper configWrapper = mock(ProductConfigWrapper.class);
-        LocalDispatcher dispatcher=mock(LocalDispatcher.class);
+        LocalDispatcher dispatcher = mock(LocalDispatcher.class);
         ShoppingCart cart = cart()
                 .readOnly()
                 .build();
@@ -306,11 +309,48 @@ public class ShoppingCartTest {
         cart.addOrIncreaseItem(IRRELEVANT_STRING, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_TIMESTAMP,
                 IRRELEVANT_BIG_DECIMAL, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_STRING, IRRELEVANT_STRING,
                 IRRELEVANT_TIMESTAMP, IRRELEVANT_TIMESTAMP, new HashMap<>(), new HashMap<>(),
-                new HashMap<>(),IRRELEVANT_STRING,configWrapper,IRRELEVANT_STRING
-                ,IRRELEVANT_STRING,IRRELEVANT_STRING,dispatcher);
+                new HashMap<>(), IRRELEVANT_STRING, configWrapper, IRRELEVANT_STRING
+                , IRRELEVANT_STRING, IRRELEVANT_STRING, dispatcher);
 
     }
 
+    @Test
+    public void
+    addOrIncreaseItem_should_throw_an_exception_when_adding_a_new_empty_purchase_order_basket_with_missing_supplier_product_and_an_applicable_party_id() throws ItemNotFoundException, CartItemModifyException, GenericServiceException {
+        ProductConfigWrapper configWrapper = mock(ProductConfigWrapper.class);
+        LocalDispatcher dispatcher = mock(LocalDispatcher.class);
+        when(dispatcher.runSync(eq("getSuppliersForProduct"), any()))
+                .thenThrow(new GenericServiceException());
+        ShoppingCart cart = cart()
+                .build();
+        cart.setOrderType("PURCHASE_ORDER");
+        cart.setOrderPartyId("not _NA_");
+
+        thrown.expect(CartItemModifyException.class);
+        thrown.expectMessage("SupplierProduct not found");
+
+        cart.addOrIncreaseItem(IRRELEVANT_STRING, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_TIMESTAMP,
+                IRRELEVANT_BIG_DECIMAL, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_STRING, IRRELEVANT_STRING,
+                IRRELEVANT_TIMESTAMP, IRRELEVANT_TIMESTAMP, new HashMap<>(), new HashMap<>(),
+                new HashMap<>(), IRRELEVANT_STRING, configWrapper, IRRELEVANT_STRING
+                , IRRELEVANT_STRING, IRRELEVANT_STRING, dispatcher);
+
+    }
+
+    @Test
+    public void
+    getSupplierProduct_returns_null_if_dispatcher_throws_an_error() throws GenericServiceException {
+        LocalDispatcher dispatcher = mock(LocalDispatcher.class);
+        when(dispatcher.runSync(eq("getSuppliersForProduct"), any()))
+                .thenThrow(new GenericServiceException());
+
+        ShoppingCart cart = cart()
+                .build();
+
+        GenericValue supplierProduct = cart.getSupplierProduct(IRRELEVANT_STRING, IRRELEVANT_BIG_DECIMAL, dispatcher);
+
+        assertThat(supplierProduct, is(nullValue()));
+    }
 
     private ProductStoreBuilder productStore() {
         return new ProductStoreBuilder();
