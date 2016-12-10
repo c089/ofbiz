@@ -277,12 +277,7 @@ public class ShoppingCartTest {
     @Test
     public void isPinRequiredForGC_should_warn_about_missing_giftCertSettings() throws Exception {
         ShoppingCart.Logger logger = mock(ShoppingCart.Logger.class);
-        ShoppingCart.ProductStoreRepository repository = new ShoppingCart.ProductStoreRepository() {
-            @Override
-            public GenericValue giftCertSettings(String productStoreId) throws GenericEntityException {
-                return null;
-            }
-        };
+        ShoppingCart.ProductStoreRepository repository = productStoreId -> null;
 
         ShoppingCart cart = cart()
                 .withLogger(logger)
