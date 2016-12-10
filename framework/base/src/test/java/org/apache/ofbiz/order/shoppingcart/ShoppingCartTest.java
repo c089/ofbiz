@@ -3,13 +3,16 @@ package org.apache.ofbiz.order.shoppingcart;
 import org.apache.ofbiz.entity.Delegator;
 import org.apache.ofbiz.entity.GenericEntityException;
 import org.apache.ofbiz.entity.GenericValue;
+import org.apache.ofbiz.product.config.ProductConfigWrapper;
 import org.apache.ofbiz.service.LocalDispatcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -21,6 +24,9 @@ import static org.hamcrest.core.Is.is;
 import static org.mockito.Mockito.*;
 
 public class ShoppingCartTest {
+    private static final BigDecimal IRRELEVANT_BIG_DECIMAL = new BigDecimal(15.0);
+    private static final Timestamp IRRELEVANT_TIMESTAMP = new Timestamp(325L);
+    private static final String IRRELEVANT_STRING = "productId";
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
@@ -284,6 +290,25 @@ public class ShoppingCartTest {
 
         verify(logger).logWarning("No product store gift certificate settings found for store [my_store]", ShoppingCart.module);
         assertThat(pinRequiredForGC, is(true));
+    }
+
+    @Test public void
+    addOrIncreaseItem_should_throw_error_when_card_is_read_only() throws ItemNotFoundException, CartItemModifyException {
+        ProductConfigWrapper configWrapper = mock(ProductConfigWrapper.class);
+        LocalDispatcher dispatcher=mock(LocalDispatcher.class);
+        ShoppingCart cart = cart()
+                .readOnly()
+                .build();
+
+        thrown.expect(CartItemModifyException.class);
+        thrown.expectMessage("Cart items cannot be changed");
+
+        cart.addOrIncreaseItem(IRRELEVANT_STRING, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_TIMESTAMP,
+                IRRELEVANT_BIG_DECIMAL, IRRELEVANT_BIG_DECIMAL, IRRELEVANT_STRING, IRRELEVANT_STRING,
+                IRRELEVANT_TIMESTAMP, IRRELEVANT_TIMESTAMP, new HashMap<>(), new HashMap<>(),
+                new HashMap<>(),IRRELEVANT_STRING,configWrapper,IRRELEVANT_STRING
+                ,IRRELEVANT_STRING,IRRELEVANT_STRING,dispatcher);
+
     }
 
 
