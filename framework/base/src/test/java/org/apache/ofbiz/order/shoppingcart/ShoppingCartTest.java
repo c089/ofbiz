@@ -251,11 +251,9 @@ public class ShoppingCartTest {
 
     @Test
     public void isPinRequiredForGC_should_be_true_when_GiftCertSettings_requirePinCode_is_set_to_Y() throws Exception {
-        ShoppingCart.ProductStoreRepository repository = productStoreId -> {
-            GenericValue value = mock(GenericValue.class);
-            when(value.getString("requirePinCode")).thenReturn("Y");
-            return value;
-        };
+        ShoppingCart.ProductStoreRepository repository = new ProductStoreRepositoryBuilder()
+                .requirePinCode()
+                .build();
 
         ShoppingCart cart = cart()
                 .withProductStoreRepository(repository)
@@ -267,11 +265,9 @@ public class ShoppingCartTest {
 
     @Test
     public void isPinRequiredForGC_should_be_false_when_GiftCertSettings_requirePinCode_is_set_to_N() throws Exception {
-        ShoppingCart.ProductStoreRepository repository = productStoreId -> {
-            GenericValue value = mock(GenericValue.class);
-            when(value.getString("requirePinCode")).thenReturn("N");
-            return value;
-        };
+        ShoppingCart.ProductStoreRepository repository = new ProductStoreRepositoryBuilder()
+                .doNotRequirePinCode()
+                .build();
 
         ShoppingCart cart = cart()
                 .withProductStoreRepository(repository)
