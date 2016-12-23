@@ -376,10 +376,6 @@ public class ShoppingCartTest {
         assertThat(result, is(SUPPLIER));
     }
 
-    private ProductStoreBuilder productStore() {
-        return new ProductStoreBuilder();
-    }
-
     private ShoppingCartBuilder cart() {
         return new ShoppingCartBuilder();
     }
