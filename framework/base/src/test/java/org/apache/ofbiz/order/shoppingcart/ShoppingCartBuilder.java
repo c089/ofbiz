@@ -38,6 +38,16 @@ class ShoppingCartBuilder {
         return this;
     }
 
+    ShoppingCartBuilder withoutProductStore() {
+        this.productStore = null;
+        return this;
+    }
+
+    ShoppingCartBuilder withProductStore(BuilderAugmenter<ProductStoreBuilder> a) {
+        this.productStore = a.augment(new ProductStoreBuilder()).build();
+        return this;
+    }
+
     ShoppingCartBuilder withDefaultLocale(Locale locale) {
         this.defaultLocale = locale;
         return this;

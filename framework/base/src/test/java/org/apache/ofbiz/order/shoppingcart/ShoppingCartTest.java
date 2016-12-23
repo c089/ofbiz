@@ -60,7 +60,7 @@ public class ShoppingCartTest {
 
         cart()
                 .withProductStoreId("fooStore")
-                .withProductStore(null)
+                .withoutProductStore()
                 .build();
     }
 
@@ -139,13 +139,11 @@ public class ShoppingCartTest {
 
     @Test
     public void should_use_billFromVendorPartyId_from_ProductStore() throws Exception {
-        GenericValue productStore = productStore()
-                .withPayToPartyId("the party id")
-                .build();
-
         ShoppingCart cart = cart()
                 .withBillFromVendorPartyId(null)
-                .withProductStore(productStore)
+                .withProductStore(p ->
+                        p.withPayToPartyId("the party id")
+                )
                 .build();
 
         assertThat(cart.getBillFromVendorPartyId(), is("the party id"));
@@ -153,12 +151,10 @@ public class ShoppingCartTest {
 
     @Test
     public void should_prefer_given_billFromVendorPartyId_over_ProductStore() throws Exception {
-        GenericValue productStore = productStore()
-                .withPayToPartyId("product store party id")
-                .build();
-
         ShoppingCart cart = cart()
-                .withProductStore(productStore)
+                .withProductStore(p ->
+                        p.withPayToPartyId("product store party id")
+                )
                 .withBillFromVendorPartyId("other party id")
                 .build();
 
@@ -168,12 +164,10 @@ public class ShoppingCartTest {
 
     @Test
     public void should_use_facilityId_from_ProductStore() {
-        GenericValue productStore = productStore()
-                .withFacilityId("my facility")
-                .build();
-
         ShoppingCart cart = cart()
-                .withProductStore(productStore)
+                .withProductStore(p ->
+                        p.withFacilityId("my facility")
+                )
                 .build();
 
         assertThat(cart.getFacilityId(), is("my facility"));
@@ -415,27 +409,5 @@ public class ShoppingCartTest {
                 , IRRELEVANT_STRING, IRRELEVANT_STRING, dispatcher);
     }
 
-    private class ProductStoreBuilder {
-
-        private String payToPartyId;
-        private String facilityId;
-
-        ProductStoreBuilder withPayToPartyId(String payToPartyId) {
-            this.payToPartyId = payToPartyId;
-            return this;
-        }
-
-        GenericValue build() {
-            GenericValue productStore = mock(GenericValue.class);
-            when(productStore.getString("payToPartyId")).thenReturn(this.payToPartyId);
-            when(productStore.getString("inventoryFacilityId")).thenReturn(this.facilityId);
-            return productStore;
-        }
-
-        ProductStoreBuilder withFacilityId(String facilityId) {
-            this.facilityId = facilityId;
-            return this;
-        }
-    }
 }
 
