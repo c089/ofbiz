@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Function;
 
 import static org.mockito.Mockito.mock;
 
@@ -136,8 +137,8 @@ class ShoppingCartBuilder {
         return cart;
     }
 
-    public ShoppingCartBuilder withMinimumOrderPriceListRepository(ShoppingCart.MinimumOrderPriceListRepository testMinimumOrderPriceListRepository) {
-        this.minimumOrderPriceRepository = testMinimumOrderPriceListRepository;
+    public ShoppingCartBuilder withMinimumOrderPriceListRepository(Function<MinimumOrderPriceRepositoryBuilder, MinimumOrderPriceRepositoryBuilder> f) {
+        this.minimumOrderPriceRepository = f.apply(new MinimumOrderPriceRepositoryBuilder()).build();
         return this;
     }
 

@@ -109,12 +109,11 @@ public class ShoppingCartMinimumOrderQuantityTest {
 
     @Test
     public void test_getMinimumQuantity() throws Exception {
-        ShoppingCart.MinimumOrderPriceListRepository priceListRepository = minimumOrderPriceRepository()
-                .withPricesForAnyProduct(this.priceBuilder)
-                .withMinimumOrderPriceForAnyProduct(this.minimumOrderPrice)
-                .build();
         ShoppingCart cart = cart()
-                .withMinimumOrderPriceListRepository(priceListRepository)
+                .withMinimumOrderPriceListRepository(b -> b
+                        .withPricesForAnyProduct(this.priceBuilder)
+                        .withMinimumOrderPriceForAnyProduct(this.minimumOrderPrice)
+                )
                 .build();
 
         BigDecimal result = cart.getMinimumOrderQuantity(this.itemBasePrice, null);
