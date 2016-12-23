@@ -367,6 +367,10 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
         return minimumOrderPriceListRepository;
     }
 
+    protected String getMessage(String resource, String name) {
+        return UtilProperties.getMessage(resource, name, locale);
+    }
+
     /* -------------------- c089: Seams end -------------------- */
 
 
@@ -560,9 +564,9 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
                 supplierProduct = productSuppliers.get(0);
             }
         } catch (GenericServiceException e) {
-            Debug.logWarning(UtilProperties.getMessage(resource_error,"OrderRunServiceGetSuppliersForProductError", locale) + e.getMessage(), module);
+            getLogger().logWarning(getMessage(resource_error, "OrderRunServiceGetSuppliersForProductError") + e.getMessage(), module);
         } catch (Exception e) {
-            Debug.logWarning(UtilProperties.getMessage(resource_error,"OrderRunServiceGetSuppliersForProductError", locale) + e.getMessage(), module);
+            getLogger().logWarning(getMessage(resource_error, "OrderRunServiceGetSuppliersForProductError") + e.getMessage(), module);
         }
         return supplierProduct;
     }
@@ -4241,10 +4245,10 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
                 GenericValue productStore = this.getDelegator().findOne("ProductStore", UtilMisc.toMap("productStoreId", this.getProductStoreId()), true);
                 facilityId = productStore.getString("inventoryFacilityId");
             } catch (GenericEntityException gee) {
-                Debug.logError(UtilProperties.getMessage(resource_error,"OrderProblemGettingProductStoreRecords", locale) + gee.getMessage(), module);
+                Debug.logError(getMessage(resource_error, "OrderProblemGettingProductStoreRecords") + gee.getMessage(), module);
                 return;
             } catch (Exception e) {
-                Debug.logError(UtilProperties.getMessage(resource_error,"OrderProblemGettingProductStoreRecords", locale) + e.getMessage(), module);
+                Debug.logError(getMessage(resource_error, "OrderProblemGettingProductStoreRecords") + e.getMessage(), module);
                 return;
             }
         }
@@ -4301,9 +4305,9 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
                         }
 
                     } catch (GenericServiceException gee) {
-                        Debug.logWarning(UtilProperties.getMessage(resource_error,"OrderRunServiceGetInventoryAvailableByFacilityError", locale) + gee.getMessage(), module);
+                        Debug.logWarning(getMessage(resource_error, "OrderRunServiceGetInventoryAvailableByFacilityError") + gee.getMessage(), module);
                     } catch (Exception e) {
-                        Debug.logWarning(UtilProperties.getMessage(resource_error,"OrderRunServiceGetInventoryAvailableByFacilityError", locale) + e.getMessage(), module);
+                        Debug.logWarning(getMessage(resource_error, "OrderRunServiceGetInventoryAvailableByFacilityError") + e.getMessage(), module);
                     }
                 } else {
 
@@ -4326,7 +4330,7 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
                         supplierPartyId = supplierProduct.getString("partyId");
                     }
                 } catch (GenericServiceException e) {
-                    Debug.logWarning(UtilProperties.getMessage(resource_error,"OrderRunServiceGetSuppliersForProductError", locale) + e.getMessage(), module);
+                    Debug.logWarning(getMessage(resource_error, "OrderRunServiceGetSuppliersForProductError") + e.getMessage(), module);
                 }
 
                 // Leave the items untouched if we couldn't find a supplier

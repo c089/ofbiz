@@ -124,6 +124,11 @@ class ShoppingCartBuilder {
             protected ShoppingCartItem makePurchaseOrderItem(String productId, BigDecimal selectedAmount, BigDecimal quantity, Timestamp shipBeforeDate, Timestamp shipAfterDate, Map<String, GenericValue> features, Map<String, Object> attributes, String prodCatalogId, ProductConfigWrapper configWrapper, String itemType, LocalDispatcher dispatcher, ShoppingCartItemGroup itemGroup, GenericValue supplierProduct) throws CartItemModifyException, ItemNotFoundException {
                 return purchaseOrderItem;
             }
+
+            @Override
+            protected String getMessage(String resource, String name) {
+                return String.format("Message for resource=[%s], name=[%s]", resource, name);
+            }
         };
         cart.setReadOnlyCart(this.readOnly);
         cart.setOrderType(this.orderType);
