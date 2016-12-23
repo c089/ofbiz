@@ -33,11 +33,6 @@ class ShoppingCartBuilder {
         return new ShoppingCartBuilder();
     }
 
-    ShoppingCartBuilder withProductStore(GenericValue store) {
-        this.productStore = store;
-        return this;
-    }
-
     ShoppingCartBuilder withoutProductStore() {
         this.productStore = null;
         return this;

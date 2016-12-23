@@ -115,11 +115,8 @@ public class ShoppingCartTest {
 
     @Test
     public void viewCartOnAdd_is_set_to_true_when_Y_on_ProductStore() {
-        GenericValue productStore = mock(GenericValue.class);
-        when(productStore.getString("viewCartOnAdd")).thenReturn("Y");
-
         ShoppingCart cart = cart()
-                .withProductStore(productStore)
+                .withProductStore(productStoreBuilder -> productStoreBuilder.withViewCartOnAdd("Y") )
                 .build();
 
         assertThat(cart.viewCartOnAdd(), is(true));
@@ -127,11 +124,8 @@ public class ShoppingCartTest {
 
     @Test
     public void viewCartOnAdd_is_set_to_true_when_lowercase_y_on_ProductStore() {
-        GenericValue productStore = mock(GenericValue.class);
-        when(productStore.getString("viewCartOnAdd")).thenReturn("y");
-
         ShoppingCart cart = cart()
-                .withProductStore(productStore)
+                .withProductStore(productStoreBuilder -> productStoreBuilder.withViewCartOnAdd("y"))
                 .build();
 
         assertThat(cart.viewCartOnAdd(), is(true));
