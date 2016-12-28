@@ -565,43 +565,6 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
         return getSuppliersRepository().getFirstSupplierProduct(productId, quantity, dispatcher, this.getPartyId(), this.getCurrency());
     }
 
-    interface SuppliersRepository {
-        GenericValue getFirstSupplierProduct(String productId, BigDecimal quantity, LocalDispatcher dispatcher, String partyId, String currency);
-    }
-
-    class DefaultSuppliersRepository implements SuppliersRepository {
-        final Logger logger;
-        private MessageProvider messageProvider;
-
-        DefaultSuppliersRepository(Logger logger, MessageProvider messageProvider) {
-            this.logger = logger;
-            this.messageProvider = messageProvider;
-        }
-
-        @Override
-        public GenericValue getFirstSupplierProduct(String productId, BigDecimal quantity, LocalDispatcher dispatcher, String partyId, String currency) {
-            GenericValue supplierProduct = null;
-            Map<String, Object> params = UtilMisc.<String, Object>toMap("productId", productId,
-                    "partyId", partyId,
-                    "currencyUomId", currency,
-                    "quantity", quantity);
-            try {
-                Map<String, Object> result = dispatcher.runSync("getSuppliersForProduct", params);
-                List<GenericValue> productSuppliers = UtilGenerics.checkList(result.get("supplierProducts"));
-                if ((productSuppliers != null) && (productSuppliers.size() > 0)) {
-                    supplierProduct = productSuppliers.get(0);
-                }
-            } catch (Exception e) {
-                getLogger().logWarning(this.messageProvider.getMessage(resource_error, "OrderRunServiceGetSuppliersForProductError") + e.getMessage(), module);
-            }
-            return supplierProduct;
-        }
-
-        public Logger getLogger() {
-            return logger;
-        }
-    }
-
     // =======================================================================
     // Methods for cart items
     // =======================================================================
