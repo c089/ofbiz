@@ -27,6 +27,8 @@ import org.apache.ofbiz.entity.util.EntityUtilProperties;
 import org.apache.ofbiz.order.finaccount.FinAccountHelper;
 import org.apache.ofbiz.order.order.OrderReadHelper;
 import org.apache.ofbiz.order.shoppingcart.domain.ProductPrice;
+import org.apache.ofbiz.order.shoppingcart.model.GiftCertSettings;
+import org.apache.ofbiz.order.shoppingcart.model.ProductStore;
 import org.apache.ofbiz.order.shoppingcart.product.ProductPromoWorker;
 import org.apache.ofbiz.order.shoppingcart.shipping.ShippingEstimateWrapper;
 import org.apache.ofbiz.order.shoppinglist.ShoppingListEvents;
@@ -271,43 +273,6 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
 
     /* -------------------- c089: Seams start -------------------- */
 
-    class ProductStore {
-        private GenericValue productStore;
-        private boolean viewCartOnAdd;
-        private String payToPartyId;
-        private String inventoryFacilityId;
-
-        ProductStore(GenericValue productStore) {
-            String storeViewCartOnAdd = productStore.getString("viewCartOnAdd");
-            viewCartOnAdd = storeViewCartOnAdd != null && "Y".equalsIgnoreCase(storeViewCartOnAdd);
-
-            payToPartyId = productStore.getString("payToPartyId");
-            inventoryFacilityId = productStore.getString("inventoryFacilityId");
-        }
-
-        public boolean viewCartOnAdd() {
-            return viewCartOnAdd;
-        }
-
-        public String payToPartId() {
-            return payToPartyId;
-        }
-
-        public String inventoryFacilityId() {
-            return inventoryFacilityId;
-        }
-    }
-    class GiftCertSettings {
-        final private boolean isPinRequired;
-
-        GiftCertSettings(GenericValue value) {
-            this.isPinRequired = "Y".equals(value.getString("requirePinCode"));
-        }
-
-        boolean isPinRequired() {
-            return this.isPinRequired;
-        }
-    }
     interface ProductStoreRepository {
         GenericValue giftCertSettings(String productStoreId) throws GenericEntityException;
     }
