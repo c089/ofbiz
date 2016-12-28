@@ -591,8 +591,6 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
                 if ((productSuppliers != null) && (productSuppliers.size() > 0)) {
                     supplierProduct = productSuppliers.get(0);
                 }
-            } catch (GenericServiceException e) {
-                getLogger().logWarning(this.messageProvider.getMessage(resource_error, "OrderRunServiceGetSuppliersForProductError", locale) + e.getMessage(), module);
             } catch (Exception e) {
                 getLogger().logWarning(this.messageProvider.getMessage(resource_error, "OrderRunServiceGetSuppliersForProductError", locale) + e.getMessage(), module);
             }
