@@ -372,10 +372,6 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
         return getMessageProvider().getMessage(resource, name);
     }
 
-    protected SuppliersRepository getSuppliersRepository() {
-        return new DefaultSuppliersRepository(getLogger(), getMessageProvider());
-    }
-
     protected MessageProvider getMessageProvider() {
         return new LocalizingMessageProvider(locale);
     }
@@ -562,7 +558,8 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
     }
 
     public GenericValue getSupplierProduct(String productId, BigDecimal quantity, LocalDispatcher dispatcher) {
-        return getSuppliersRepository().getFirstSupplierProduct(productId, quantity, dispatcher, this.getPartyId(), this.getCurrency());
+        DefaultSuppliersRepository repository = new DefaultSuppliersRepository(getLogger(), getMessageProvider(), dispatcher);
+        return repository.getFirstSupplierProduct(productId, quantity, this.getPartyId(), this.getCurrency());
     }
 
     // =======================================================================

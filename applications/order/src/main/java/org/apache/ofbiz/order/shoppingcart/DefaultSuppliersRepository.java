@@ -12,14 +12,17 @@ import java.util.Map;
 class DefaultSuppliersRepository implements SuppliersRepository {
     final ShoppingCart.Logger logger;
     private MessageProvider messageProvider;
+    private final LocalDispatcher dispatcher;
 
-    DefaultSuppliersRepository(ShoppingCart.Logger logger, MessageProvider messageProvider) {
+    public DefaultSuppliersRepository(ShoppingCart.Logger logger, MessageProvider messageProvider, LocalDispatcher dispatcher) {
         this.logger = logger;
         this.messageProvider = messageProvider;
+        this.dispatcher = dispatcher;
     }
 
+
     @Override
-    public GenericValue getFirstSupplierProduct(String productId, BigDecimal quantity, LocalDispatcher dispatcher, String partyId, String currency) {
+    public GenericValue getFirstSupplierProduct(String productId, BigDecimal quantity, String partyId, String currency) {
         GenericValue supplierProduct = null;
         Map<String, Object> params = UtilMisc.<String, Object>toMap("productId", productId,
                 "partyId", partyId,
