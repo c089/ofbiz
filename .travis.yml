@@ -1,4 +1,7 @@
 language: java
 
+script:
+  - ./gradlew check loadDefault testIntegration
+
 jdk:
   - oraclejdk8
