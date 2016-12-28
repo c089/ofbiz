@@ -246,7 +246,7 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
 
 
         if (productStoreId != null) {
-            ProductStore productStore = getProductStore(delegator, productStoreId);
+            ProductStore productStore = getProductStore(productStoreId);
             // set the default view cart on add for this store
             this.viewCartOnAdd = productStore.viewCartOnAdd();
 
@@ -347,7 +347,7 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
     /* -------------------- c089: Seams end -------------------- */
 
 
-    private ProductStore getProductStore(Delegator delegator, String productStoreId) {
+    private ProductStore getProductStore(String productStoreId) {
         GenericValue productStoreValue = getProductStoreRepository().getProductStore(productStoreId);
         if (productStoreValue == null) {
             throw new IllegalArgumentException("Unable to locate ProductStore by ID [" + productStoreId + "]");
