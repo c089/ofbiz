@@ -369,7 +369,7 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
     }
 
     private String getMessage(String resource, String name) {
-        return getMessageProvider().getMessage(resource, name, locale);
+        return getMessageProvider().getMessage(resource, name);
     }
 
     protected SuppliersRepository getSuppliersRepository() {
@@ -377,7 +377,7 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
     }
 
     protected MessageProvider getMessageProvider() {
-        return new DefaultMessageProvider();
+        return new LocalizingMessageProvider(locale);
     }
 
 
@@ -592,7 +592,7 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
                     supplierProduct = productSuppliers.get(0);
                 }
             } catch (Exception e) {
-                getLogger().logWarning(this.messageProvider.getMessage(resource_error, "OrderRunServiceGetSuppliersForProductError", locale) + e.getMessage(), module);
+                getLogger().logWarning(this.messageProvider.getMessage(resource_error, "OrderRunServiceGetSuppliersForProductError") + e.getMessage(), module);
             }
             return supplierProduct;
         }

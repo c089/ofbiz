@@ -135,7 +135,7 @@ class ShoppingCartBuilder {
 
             @Override
             protected MessageProvider getMessageProvider() {
-                return (resource, name, locale) -> String.format("Message for resource=[%s], name=[%s]", resource, name);
+                return (resource, name) -> String.format("Message for resource=[%s], name=[%s]", resource, name);
             }
         };
         cart.setReadOnlyCart(this.readOnly);
