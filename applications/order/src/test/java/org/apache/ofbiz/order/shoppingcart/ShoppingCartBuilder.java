@@ -1,5 +1,6 @@
 package org.apache.ofbiz.order.shoppingcart;
 
+import com.google.protobuf.Message;
 import org.apache.ofbiz.entity.Delegator;
 import org.apache.ofbiz.entity.GenericValue;
 import org.apache.ofbiz.product.config.ProductConfigWrapper;
@@ -130,9 +131,11 @@ class ShoppingCartBuilder {
                 return purchaseOrderItem;
             }
 
+
+
             @Override
-            protected String getMessage(String resource, String name) {
-                return String.format("Message for resource=[%s], name=[%s]", resource, name);
+            protected MessageProvider getMessageProvider() {
+                return (resource, name, locale) -> String.format("Message for resource=[%s], name=[%s]", resource, name);
             }
         };
         cart.setReadOnlyCart(this.readOnly);

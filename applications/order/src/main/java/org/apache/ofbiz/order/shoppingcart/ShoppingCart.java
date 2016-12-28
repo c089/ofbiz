@@ -368,12 +368,16 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
         return minimumOrderPriceListRepository;
     }
 
-    protected String getMessage(String resource, String name) {
-        return UtilProperties.getMessage(resource, name, locale);
+    private String getMessage(String resource, String name) {
+        return getMessageProvider().getMessage(resource, name, locale);
     }
 
     protected SuppliersRepository getSuppliersRepository() {
-        return new DefaultSuppliersRepository(getLogger());
+        return new DefaultSuppliersRepository(getLogger(), getMessageProvider());
+    }
+
+    protected MessageProvider getMessageProvider() {
+        return new DefaultMessageProvider();
     }
 
 
@@ -567,9 +571,11 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
 
     class DefaultSuppliersRepository implements SuppliersRepository {
         final Logger logger;
+        private MessageProvider messageProvider;
 
-        DefaultSuppliersRepository(Logger logger) {
+        DefaultSuppliersRepository(Logger logger, MessageProvider messageProvider) {
             this.logger = logger;
+            this.messageProvider = messageProvider;
         }
 
         @Override
@@ -586,9 +592,9 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
                     supplierProduct = productSuppliers.get(0);
                 }
             } catch (GenericServiceException e) {
-                getLogger().logWarning(getMessage(resource_error, "OrderRunServiceGetSuppliersForProductError") + e.getMessage(), module);
+                getLogger().logWarning(this.messageProvider.getMessage(resource_error, "OrderRunServiceGetSuppliersForProductError", locale) + e.getMessage(), module);
             } catch (Exception e) {
-                getLogger().logWarning(getMessage(resource_error, "OrderRunServiceGetSuppliersForProductError") + e.getMessage(), module);
+                getLogger().logWarning(this.messageProvider.getMessage(resource_error, "OrderRunServiceGetSuppliersForProductError", locale) + e.getMessage(), module);
             }
             return supplierProduct;
         }
