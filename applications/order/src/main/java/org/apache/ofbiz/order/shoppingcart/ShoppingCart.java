@@ -353,7 +353,11 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
             throw new IllegalArgumentException("Unable to locate ProductStore by ID [" + productStoreId + "]");
         }
 
-        return new ProductStore(productStoreValue);
+        final String storeViewCartOnAdd = productStoreValue.getString("viewCartOnAdd");
+        final boolean viewCartOnAdd = storeViewCartOnAdd != null && "Y".equalsIgnoreCase(storeViewCartOnAdd);
+        final String payToPartyId = productStoreValue.getString("payToPartyId");
+        final String inventoryFacilityId = productStoreValue.getString("inventoryFacilityId");
+        return new ProductStore(viewCartOnAdd, payToPartyId, inventoryFacilityId);
     }
 
     public Delegator getDelegator() {
