@@ -5147,7 +5147,8 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
     }
 
     public static BigDecimal getMinimumOrderQuantity(Delegator delegator, BigDecimal itemBasePrice, String itemProductId) throws GenericEntityException {
-        return new ShoppingCart().getMinimumOrderQuantity(itemBasePrice, itemProductId);
+        ShoppingCart cart = new ShoppingCart(delegator, null, null, null);
+        return cart.getMinimumOrderQuantity(itemBasePrice, itemProductId);
     }
 
     protected BigDecimal getMinimumOrderQuantity(BigDecimal itemBasePrice, String itemProductId) throws GenericEntityException {

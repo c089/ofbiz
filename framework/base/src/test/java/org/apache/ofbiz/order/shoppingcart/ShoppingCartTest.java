@@ -376,6 +376,15 @@ public class ShoppingCartTest {
         assertThat(result, is(SUPPLIER));
     }
 
+    @Test
+    public void staticLegacyGetMinimumOrderQuantityShouldNotThrow() throws Exception {
+        Delegator delegator = mock(Delegator.class);
+
+        BigDecimal minimumOrderQuantity = ShoppingCart.getMinimumOrderQuantity(delegator, null, null);
+
+        assertThat(minimumOrderQuantity, is(BigDecimal.valueOf(0)));
+    }
+
     private ShoppingCartBuilder cart() {
         return new ShoppingCartBuilder();
     }
