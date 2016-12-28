@@ -1,5 +1,6 @@
 package org.apache.ofbiz.order.shoppingcart;
 
+import org.apache.ofbiz.entity.GenericEntityException;
 import org.apache.ofbiz.entity.GenericValue;
 
 import static org.mockito.Mockito.mock;
@@ -20,10 +21,13 @@ class ProductStoreRepositoryBuilder implements Builder<ShoppingCart.ProductStore
 
     @Override
     public ShoppingCart.ProductStoreRepository build() {
-        return productStoreId -> {
-            GenericValue value = mock(GenericValue.class);
-            when(value.getString("requirePinCode")).thenReturn(this.requirePinCode);
-            return value;
+        return new ShoppingCart.ProductStoreRepository() {
+            @Override
+            public GenericValue giftCertSettings(String productStoreId) throws GenericEntityException {
+                GenericValue value = mock(GenericValue.class);
+                when(value.getString("requirePinCode")).thenReturn(ProductStoreRepositoryBuilder.this.requirePinCode);
+                return value;
+            }
         };
     }
 }

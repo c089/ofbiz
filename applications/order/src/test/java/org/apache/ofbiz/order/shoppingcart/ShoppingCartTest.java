@@ -220,12 +220,11 @@ public class ShoppingCartTest {
         assertThat(ShoppingCart.getItemsProducts(items), is(Arrays.asList(product1, product2)));
     }
 
-    private ShoppingCart.ProductStoreRepository productStoreRepository = s -> {
-        throw new GenericEntityException("my message");
-    };
+    private ShoppingCart.ProductStoreRepository productStoreRepository = mock(ShoppingCart.ProductStoreRepository.class);
 
     @Test
     public void isPinRequiredForGC_should_be_true_when_gift_cert_settings_cannot_be_loaded() throws Exception {
+        when(productStoreRepository.giftCertSettings(any())).thenThrow(new GenericEntityException("my message"));
         ShoppingCart cart = cart()
                 .withProductStoreRepository(productStoreRepository)
                 .build();
@@ -236,6 +235,7 @@ public class ShoppingCartTest {
 
     @Test
     public void isPinRequiredForGC_should_log_error_when_gift_cert_settings_cannot_be_loaded() throws Exception {
+        when(productStoreRepository.giftCertSettings(any())).thenThrow(new GenericEntityException("my message"));
         ShoppingCart.Logger logger = mock(ShoppingCart.Logger.class);
 
         ShoppingCart cart = cart()
@@ -279,11 +279,11 @@ public class ShoppingCartTest {
     @Test
     public void isPinRequiredForGC_should_warn_about_missing_giftCertSettings() throws Exception {
         ShoppingCart.Logger logger = mock(ShoppingCart.Logger.class);
-        ShoppingCart.ProductStoreRepository repository = productStoreId -> null;
+        when(productStoreRepository.giftCertSettings(any())).thenReturn(null);
 
         ShoppingCart cart = cart()
                 .withLogger(logger)
-                .withProductStoreRepository(repository)
+                .withProductStoreRepository(productStoreRepository)
                 .build();
 
         boolean pinRequiredForGC = cart.isPinRequiredForGC(cart.getDelegator());
