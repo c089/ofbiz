@@ -1,7 +1,7 @@
 language: java
 
 script:
-  - ./gradlew check loadDefault testIntegration
+  - ./gradlew check loadDefault "ofbiz --test component=order --test suitename=shoppingcarttests"
 
 jdk:
   - oraclejdk8
