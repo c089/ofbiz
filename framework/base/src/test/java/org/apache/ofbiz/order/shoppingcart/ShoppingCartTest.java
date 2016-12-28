@@ -382,7 +382,7 @@ public class ShoppingCartTest {
 
         BigDecimal minimumOrderQuantity = ShoppingCart.getMinimumOrderQuantity(delegator, null, null);
 
-        assertThat(minimumOrderQuantity, is(BigDecimal.valueOf(0)));
+        assertThat(minimumOrderQuantity, is(BigDecimal.ZERO));
     }
 
     private ShoppingCartBuilder cart() {
