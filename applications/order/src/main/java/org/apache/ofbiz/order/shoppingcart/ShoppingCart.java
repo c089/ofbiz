@@ -373,7 +373,7 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
     }
 
     protected SuppliersRepository getSuppliersRepository() {
-        return new DefaultSuppliersRepository();
+        return new DefaultSuppliersRepository(getLogger());
     }
 
 
@@ -566,6 +566,12 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
     }
 
     class DefaultSuppliersRepository implements SuppliersRepository {
+        final Logger logger;
+
+        DefaultSuppliersRepository(Logger logger) {
+            this.logger = logger;
+        }
+
         @Override
         public GenericValue getFirstSupplierProduct(String productId, BigDecimal quantity, LocalDispatcher dispatcher, String partyId, String currency) {
             GenericValue supplierProduct = null;
@@ -585,6 +591,10 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
                 getLogger().logWarning(getMessage(resource_error, "OrderRunServiceGetSuppliersForProductError") + e.getMessage(), module);
             }
             return supplierProduct;
+        }
+
+        public Logger getLogger() {
+            return logger;
         }
     }
 

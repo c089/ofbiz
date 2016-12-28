@@ -377,6 +377,21 @@ public class ShoppingCartTest {
     }
 
     @Test
+    public void getSupplierProduct_logs_warning_if_dispatcher_throws() throws Exception {
+        when(dispatcher.runSync(eq("getSuppliersForProduct"), any()))
+                .thenThrow(new GenericServiceException());
+
+        ShoppingCart.Logger logger = mock(ShoppingCart.Logger.class);
+        ShoppingCart cart = cart().withLogger(logger).build();
+
+        cart.getSupplierProduct(IRRELEVANT_STRING, IRRELEVANT_BIG_DECIMAL, dispatcher);
+
+        verify(logger).logWarning(
+                "Message for resource=[OrderErrorUiLabels], name=[OrderRunServiceGetSuppliersForProductError]null",
+                "org.apache.ofbiz.order.shoppingcart.ShoppingCart");
+    }
+
+    @Test
     public void staticLegacyGetMinimumOrderQuantityShouldNotThrow() throws Exception {
         Delegator delegator = mock(Delegator.class);
 
