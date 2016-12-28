@@ -28,6 +28,11 @@ class ProductStoreRepositoryBuilder implements Builder<ShoppingCart.ProductStore
                 when(value.getString("requirePinCode")).thenReturn(ProductStoreRepositoryBuilder.this.requirePinCode);
                 return value;
             }
+
+            @Override
+            public GenericValue getProductStore(String productStoreId) {
+                return null;
+            }
         };
     }
 }

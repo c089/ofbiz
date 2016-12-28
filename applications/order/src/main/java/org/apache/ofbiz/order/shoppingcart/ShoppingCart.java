@@ -275,6 +275,7 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
 
     interface ProductStoreRepository {
         GenericValue giftCertSettings(String productStoreId) throws GenericEntityException;
+        GenericValue getProductStore(String productStoreId);
     }
 
     interface Logger {
@@ -283,11 +284,16 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
         void logWarning(String msg, String module);
     }
 
-    class EntityQueryProductStoreRepository implements ProductStoreRepository {
+    static class EntityQueryProductStoreRepository implements ProductStoreRepository {
         private final Delegator delegator;
 
         EntityQueryProductStoreRepository(Delegator delegator) {
             this.delegator = delegator;
+        }
+
+        @Override
+        public GenericValue getProductStore(String productStoreId) {
+            return ProductStoreWorker.getProductStore(productStoreId, delegator);
         }
 
         @Override
@@ -321,7 +327,7 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
     }
 
     protected GenericValue loadProductStore(Delegator delegator, String productStoreId) {
-        return ProductStoreWorker.getProductStore(productStoreId, delegator);
+        return getProductStoreRepository().getProductStore(productStoreId);
     }
 
     protected ProductStoreRepository getProductStoreRepository() {
