@@ -26,6 +26,7 @@ import org.apache.ofbiz.entity.util.EntityUtil;
 import org.apache.ofbiz.entity.util.EntityUtilProperties;
 import org.apache.ofbiz.order.finaccount.FinAccountHelper;
 import org.apache.ofbiz.order.order.OrderReadHelper;
+import org.apache.ofbiz.order.shoppingcart.domain.ProductPrice;
 import org.apache.ofbiz.order.shoppingcart.product.ProductPromoWorker;
 import org.apache.ofbiz.order.shoppingcart.shipping.ShippingEstimateWrapper;
 import org.apache.ofbiz.order.shoppinglist.ShoppingListEvents;
@@ -5158,11 +5159,13 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
         minimumOrderPrice = getMinimumOrderPriceListRepository().getMinimumOrderPriceFor(itemProductId);
 
         if (itemBasePrice == null) {
-            List<GenericValue> productPriceList = getMinimumOrderPriceListRepository().getPricesForProduct(itemProductId);
+            List<ProductPrice> productPriceList = getMinimumOrderPriceListRepository().getPricesForProduct(itemProductId);
+
             Map<String, BigDecimal> productPriceMap = new HashMap<String, BigDecimal>();
-            for (GenericValue productPrice : productPriceList) {
-                productPriceMap.put(productPrice.getString("productPriceTypeId"), productPrice.getBigDecimal("price"));
+            for (ProductPrice productPrice : productPriceList) {
+                productPriceMap.put(productPrice.getProductPriceTypeId(), productPrice.getPrice());
             }
+
             itemBasePrice = Stream.of("SPECIAL_PROMO_PRICE", "PROMO_PRICE", "DEFAULT_PRICE", "LIST_PRICE")
                     .map(productPriceMap::get)
                     .filter(UtilValidate::isNotEmpty)
@@ -5177,7 +5180,7 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
 
     interface MinimumOrderPriceListRepository {
 
-        List<GenericValue> getPricesForProduct(String itemProductId) throws GenericEntityException;
+        List<ProductPrice> getPricesForProduct(String itemProductId) throws GenericEntityException;
 
         BigDecimal getMinimumOrderPriceFor(String itemProductId) throws GenericEntityException;
     }
@@ -5189,11 +5192,22 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
         }
 
         @Override
-        public List<GenericValue> getPricesForProduct(String itemProductId) throws GenericEntityException {
-            return EntityQuery.use(delegator).from("ProductPrice")
-                                                      .where("productId", itemProductId)
-                                                      .filterByDate()
-                                                      .queryList();
+        public List<ProductPrice> getPricesForProduct(String itemProductId) throws GenericEntityException {
+            List<GenericValue> genericValues = EntityQuery.use(delegator).from("ProductPrice")
+                    .where("productId", itemProductId)
+                    .filterByDate()
+                    .queryList();
+
+            return genericValues
+                    .stream()
+                    .map(this::toProductPrice)
+                    .collect(Collectors.toList());
+        }
+
+        private ProductPrice toProductPrice(GenericValue priceValue) {
+            String productPriceTypeId = priceValue.getString("productPriceTypeId");
+            BigDecimal price = priceValue.getBigDecimal("price");
+            return new ProductPrice(productPriceTypeId, price);
         }
 
         @Override

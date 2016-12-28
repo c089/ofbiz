@@ -1,7 +1,7 @@
 package org.apache.ofbiz.order.shoppingcart;
 
 import org.apache.ofbiz.entity.GenericEntityException;
-import org.apache.ofbiz.entity.GenericValue;
+import org.apache.ofbiz.order.shoppingcart.domain.ProductPrice;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -30,7 +30,7 @@ class MinimumOrderPriceRepositoryBuilder {
             }
 
             @Override
-            public List<GenericValue> getPricesForProduct(String itemProductId) throws GenericEntityException {
+            public List<ProductPrice> getPricesForProduct(String itemProductId) throws GenericEntityException {
                 return priceBuilder.build();
             }
         };
