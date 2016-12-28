@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 class ProductStoreRepositoryBuilder implements Builder<ShoppingCart.ProductStoreRepository> {
     private String requirePinCode = "N";
+    private GenericValue productStore = mock(GenericValue.class);
 
     public ProductStoreRepositoryBuilder requirePinCode() {
         this.requirePinCode = "Y";
@@ -31,7 +32,7 @@ class ProductStoreRepositoryBuilder implements Builder<ShoppingCart.ProductStore
 
             @Override
             public GenericValue getProductStore(String productStoreId) {
-                return null;
+                return productStore;
             }
         };
     }

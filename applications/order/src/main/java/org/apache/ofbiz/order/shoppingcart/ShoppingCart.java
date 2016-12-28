@@ -326,10 +326,6 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
         return Locale.getDefault();
     }
 
-    protected GenericValue loadProductStore(Delegator delegator, String productStoreId) {
-        return getProductStoreRepository().getProductStore(productStoreId);
-    }
-
     protected ProductStoreRepository getProductStoreRepository() {
         return new EntityQueryProductStoreRepository(this.delegator);
     }
@@ -352,7 +348,7 @@ public class ShoppingCart implements Iterable<ShoppingCartItem>, Serializable {
 
 
     private ProductStore getProductStore(Delegator delegator, String productStoreId) {
-        GenericValue productStoreValue = loadProductStore(delegator, productStoreId);
+        GenericValue productStoreValue = getProductStoreRepository().getProductStore(productStoreId);
         if (productStoreValue == null) {
             throw new IllegalArgumentException("Unable to locate ProductStore by ID [" + productStoreId + "]");
         }

@@ -11,7 +11,7 @@ import java.sql.Timestamp;
 import java.util.Locale;
 import java.util.Map;
 
-import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.*;
 
 class ShoppingCartBuilder {
     private Delegator delegator = mock(Delegator.class);
@@ -102,11 +102,6 @@ class ShoppingCartBuilder {
             }
 
             @Override
-            protected GenericValue loadProductStore(Delegator delegator, String productStoreId) {
-                return productStore;
-            }
-
-            @Override
             protected String getDefaultCurrency(Delegator delegator) {
                 return defaultCurrency;
             }
@@ -118,6 +113,10 @@ class ShoppingCartBuilder {
 
             @Override
             protected ProductStoreRepository getProductStoreRepository() {
+                if(productStoreRepository == null) {
+                    productStoreRepository = mock(ProductStoreRepository.class);
+                    when(productStoreRepository.getProductStore(any())).thenReturn(productStore);
+                }
                 return productStoreRepository;
             }
 
@@ -130,8 +129,6 @@ class ShoppingCartBuilder {
             protected ShoppingCartItem makePurchaseOrderItem(String productId, BigDecimal selectedAmount, BigDecimal quantity, Timestamp shipBeforeDate, Timestamp shipAfterDate, Map<String, GenericValue> features, Map<String, Object> attributes, String prodCatalogId, ProductConfigWrapper configWrapper, String itemType, LocalDispatcher dispatcher, ShoppingCartItemGroup itemGroup, GenericValue supplierProduct) throws CartItemModifyException, ItemNotFoundException {
                 return purchaseOrderItem;
             }
-
-
 
             @Override
             protected MessageProvider getMessageProvider() {
